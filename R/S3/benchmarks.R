@@ -6,27 +6,34 @@ setwd("R/S3/")
 source("./main.R")
 
 # ---------------------------------------------DATA LOADING----------------------------------------------------
+# load("../../Data/Castellon.RData")
+# load("../../Data/nodes.RData")
+# load("../../Data/crimes.RData")
+# write.table(Castellon, file="../../Data/castellon.txt") # keeps the rownames
+# write.table(nodes, file="../../Data/nodes.txt") # keeps the rownames
+# write.table(crimes, file="../../Data/crimes.txt") # keeps the rownames
+
 # Adjacency matrix (undirected): Segmenting locations of the traffic network treated as the vertex set of the network.
-load("../../Data/Castellon.RData")
+castellon <- read.table("../../Data/castellon.txt", header=TRUE, row.names=1) # says first column are rownames
 
 # Node coordinates: Georeferenced coordinates from 'castellon' nodes
-load("../../Data/nodes.RData")
+nodes <- read.table("../../Data/nodes.txt", header=TRUE, row.names=1) # says first column are rownames
 
 # Event (crime coordinates)
-load("../../Data/crimes.RData")
+crimes <- read.table("../../Data/crimes.txt", header=TRUE, row.names=1) # says first column are rownames
 
 #subset of events
 crim <- crimes[11:111,] # From crimes, take 11 to 111 (both included)
 #crim <- crimes
 # --------------------------------------- INIT NETINTENSITY CLASS----------------------------------------------
-intnet_und <- intensitynet(Castellon, nodes, crim)
+intnet_und <- intensitynet(castellon, nodes, crim)
 
-Castellon_obj <-list(mtx = Castellon)
+castellon_obj <-list(mtx = castellon)
 class(Castellon_obj) <- "netTools"
-dirCastellon <-  Undirected2RandomDirectedAdjMtx(Castellon_obj)
-intnet_dir <- intensitynet(dirCastellon, nodes, crim, graph_type='directed')
+dir_castellon <-  Undirected2RandomDirectedAdjMtx(castellon_obj)
+intnet_dir <- intensitynet(dir_castellon, nodes, crim, graph_type='directed')
 
-intnet_mix <- intensitynet(dirCastellon, nodes, crim, graph_type='mixed')
+intnet_mix <- intensitynet(dir_castellon, nodes, crim, graph_type='mixed')
 
 # ---------------------------------- NET TOOLS CLASS: FUNCTION TESTING ----------------------------------------
 
