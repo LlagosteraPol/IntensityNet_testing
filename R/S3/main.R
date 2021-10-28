@@ -118,6 +118,9 @@ SetNetworkAttribute <- function(obj, where, name, value){
 #'
 #TODO: Set function as non-visible
 EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
+  if(node_id1 == "V318" || node_id2 == "V318"){
+    print("Hereeee")
+  }
   
   if(node_id1 == node_id2){
     stop("The two vertices cannot be the same.")
@@ -138,13 +141,13 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
   
   # If the intensity of this edge was previously calculated, then return it
   if(edge_id != 0 & !is.null(edge_attr(g, "intensity", index=edge_id))){
-    if(length(is.na(vertex_attr(g, "intensity", edge_id)))==0){
+    if(!is.na(edge_attr(g, "intensity", edge_id))[1]){
       return(edge_attr(g, 'intensity', index=edge_id))
     }
   }
   
   # Distance between the node and its neighbor
-  res <- tryCatch(
+  edge_dist <- tryCatch(
     {
       abs(distances_mtx[node_id1, node_id2]) # Distance between the node and its neighbor 
     },
@@ -178,11 +181,11 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
       indicator <- indicator + 1
     } 
   }
-  edge_intensity <- indicator/res
+  edge_intensity <- indicator/edge_dist
   
   edge_intensity
 }
-
+#CalculateEventIntensities(intnet_und)
 
 #' Calculates the intensity of the given path
 #'

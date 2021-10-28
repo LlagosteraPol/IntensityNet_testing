@@ -17,10 +17,10 @@ MeanNodeIntensity.intensitynetMix = function(obj, node_id){
      !is.null(vertex_attr(g, 'intensity_in', index=node_id)) &
      !is.null(vertex_attr(g, 'intensity_out', index=node_id)) &
      !is.null(vertex_attr(g, 'intensity_all', index=node_id))){
-    if(length(is.na(vertex_attr(g, "intensity_und", index=node_id)))==0 &
-       length(is.na(vertex_attr(g, "intensity_in", index=node_id)))==0 &
-       length(is.na(vertex_attr(g, "intensity_out", index=node_id)))==0 &
-       length(is.na(vertex_attr(g, "intensity_all", index=node_id)))==0){
+    if(!is.na(vertex_attr(g, "intensity_und", index=node_id))[1] &
+       !is.na(vertex_attr(g, "intensity_in", index=node_id))[1] &
+       !is.na(vertex_attr(g, "intensity_out", index=node_id))[1] &
+       !is.na(vertex_attr(g, "intensity_all", index=node_id))[1]){
       return( list(und_int  = vertex_attr(g, 'intensity_und', index=node_id),
                    in_int   = vertex_attr(g, 'intensity_in', index=node_id),
                    out_int  = vertex_attr(g, 'intensity_out', index=node_id),
@@ -113,7 +113,7 @@ CalculateEventIntensities.intensitynetMix = function(obj){
     if(is.null(edge_attr(g, 'intensity', edge_id))){
       #Adds result of Edgewise intenisty function to 'edge_counts'
       edge_counts[[edge_id]] <- EdgeIntensity(obj, ends(g, edge_id)[1], ends(g, edge_id)[2])
-    }else if(length(is.na(edge_attr(g, 'intensity', edge_id)))!=0){
+    }else if(is.na(edge_attr(g, 'intensity', edge_id))[1]){
       edge_counts[[edge_id]] <- 0
     }else{
       edge_counts[[edge_id]] <- edge_attr(g, 'intensity', edge_id)
@@ -146,14 +146,14 @@ CalculateEventIntensities.intensitynetMix = function(obj){
         out_counts[[node_id]]  <- 0
         all_counts[[node_id]]  <- 0
       }
-    }else if(length(is.na(vertex_attr(g, 'intensity_und', node_id)))!=0 ||
-             length(is.na(vertex_attr(g, 'intensity_in', node_id)))!=0 ||
-             length(is.na(vertex_attr(g, 'intensity_out', node_id)))!=0 ||
-             length(is.na(vertex_attr(g, 'intensity_all', node_id)))!=0){
-      if(length(is.na(vertex_attr(g, 'intensity_und', node_id)))!=0) in_counts[[node_id]]   <- 0
-      if(length(is.na(vertex_attr(g, 'intensity_in', node_id)))!=0) out_counts[[node_id]] <- 0
-      if(length(is.na(vertex_attr(g, 'intensity_out', node_id)))!=0) out_counts[[node_id]] <- 0
-      if(length(is.na(vertex_attr(g, 'intensity_all', node_id)))!=0) out_counts[[node_id]] <- 0
+    }else if(is.na(vertex_attr(g, 'intensity_und', node_id))[1] ||
+             is.na(vertex_attr(g, 'intensity_in', node_id))[1]  ||
+             is.na(vertex_attr(g, 'intensity_out', node_id))[1] ||
+             is.na(vertex_attr(g, 'intensity_all', node_id))[1]){
+      if(is.na(vertex_attr(g, 'intensity_und', node_id))[1]) in_counts[[node_id]]   <- 0
+      if(is.na(vertex_attr(g, 'intensity_in', node_id))[1]) out_counts[[node_id]] <- 0
+      if(is.na(vertex_attr(g, 'intensity_out', node_id))[1]) out_counts[[node_id]] <- 0
+      if(is.na(vertex_attr(g, 'intensity_all', node_id))[1]) out_counts[[node_id]] <- 0
     }else{
       und_counts[[node_id]] <- vertex_attr(g, 'intensity_und', node_id)
       in_counts[[node_id]]  <- vertex_attr(g, 'intensity_in', node_id)
