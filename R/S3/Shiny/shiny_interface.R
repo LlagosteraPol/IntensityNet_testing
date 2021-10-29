@@ -2,7 +2,6 @@
 
 library(shiny)
 library(shinyFiles)
-source("./main.R", local=TRUE)
 
 
 

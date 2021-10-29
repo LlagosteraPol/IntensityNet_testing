@@ -449,6 +449,42 @@ ggplot(data_df_g, aes(xcoord,ycoord)) +
   scale_x_continuous(name="x-coordinate") + theme_bw() 
   
   
-
-  
 ggplot_net(intnet, heatmap='locmoran')
+
+
+#----------------------------------COMPARE DATA WITH A REFERENCE-------------------------------------
+load("../../Data/meanintense.rdata") # Reference data (gives 'net' list object)
+intnet_und <- intensitynet(castellon, nodes, crim)
+intnet_und <- CalculateEventIntensities(intnet_und)
+
+ref_g <- net$graph
+g <- intnet_und$graph
+
+ref_nodemean <- net$mean.intensity
+ref_edgeint <- net$edge.intensity
+
+nodemean <- vertex_attr(g, 'intensity')
+edgeint <- edge_attr(g, 'intensity')
+
+
+ref_neiV318 <- neighbors(ref_g, 'V318') # V318 -> V295 V300 V344
+neiV318 <- neighbors(g, 'V318') # V318 -> V295 V300 V344
+
+ref_nodemeanV318 <- ref_nodemean[[318]]
+ref_edgeintV318 <- ref_edgeint[[318]]
+
+nodemeanV318 <- nodemean[[318]]
+edgeintV318 <- edge_attr(g, 'intensity', E(g)[get.edge.ids(g, c(318,295, 318,300, 318,344))])
+
+ref_edgeint_318_344 <- ref_edgeint[[318]][3]
+edgeint_318_300 <- edge_attr(g, 'intensity', E(g)[get.edge.ids(g, c(318,300))])
+tt <- edge_attr(g, 'intensity', E(g, c(318,300))) # <-- correct, incorrect --> edge_attr(g, 'intensity', E(g)[318,300])
+
+
+formatted_edgeint <- list()
+for (node_id in V(g)) {
+  formatted_edgeint[[node_id]] <- edge_attr(g, 'intensity', E(g)[get.edge.ids(g, c(318,295, 318,300, 318,344))])
+}
+
+# Plotting subgraph
+plot_neighborhood(intnet_und, 'V318')

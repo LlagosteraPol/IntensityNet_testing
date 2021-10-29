@@ -2,7 +2,7 @@ library(shiny)
 library(shinyFiles) # Provides functionality for client-side navigation of the server side file system in shiny apps. 
 library(shinyjs) # Perform common useful JavaScript operations in Shiny 
 library(shiny.router) # It is a simple router for your Shiny apps
-source("./main.R", local=TRUE)
+#source("./main.R", local=TRUE)
 
 server <- function(input, output, session) {
   g <- NULL
@@ -24,9 +24,9 @@ server <- function(input, output, session) {
     
     if (is.null(adj_mtx_path) || is.null(adj_mtx_path) || is.null(events_path)){
       #Default values
-      adj_mtx_path <- "../../Data/Castellon.RData"
-      node_coords_path <- "../../Data/nodes.RData"
-      events_path <- "../../Data/crimes.RData"
+      adj_mtx_path <- "../../../Data/Castellon.RData"
+      node_coords_path <- "../../../Data/nodes.RData"
+      events_path <- "../../../Data/crimes.RData"
       #return(NULL) # Uncomment if not default values
     } 
     list(adj_mtx_path = adj_mtx_path, node_coords_path = node_coords_path, events_path=events_path)
@@ -35,8 +35,8 @@ server <- function(input, output, session) {
   gen_net <- function(adj_mtx, node_coords, events){
     intnet <- intensitynet(adj_mtx, node_coords, events)
     intnet <- CalculateEventIntensities(intnet)
-    intnet <- NodeLocalCorrelation(intnet, 'moran')
-    intnet <- NodeLocalCorrelation(intnet, 'g')
+    intnet <- NodeLocalCorrelation(intnet, dep_type = 'moran_i', intensity=vertex_attr(intnet$graph)$intensity)$intnet
+    intnet <- NodeLocalCorrelation(intnet, dep_type = 'geary_g', intensity=vertex_attr(intnet$graph)$intensity)$intnet
     cat(paste(vertex_attr_names(intnet$graph), "\n"))
     #cat(paste(vertex_attr(intnet$graph)$xcoord[1], "\n"))
     g <- intnet$graph
