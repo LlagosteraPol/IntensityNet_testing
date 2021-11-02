@@ -123,10 +123,6 @@ SetNetworkAttribute <- function(obj, where, name, value){
 #'
 #TODO: Set function as non-visible
 EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
-  if(node_id1 == "V318" || node_id2 == "V318"){
-    print("Hereeee")
-  }
-  
   if(node_id1 == node_id2){
     stop("The two vertices cannot be the same.")
   }
@@ -176,15 +172,13 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
     ep <- c(events_mtx[row, 1], events_mtx[row, 2])
     dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
     class(dist_obj) <- 'netTools'
-    d <- PointToLine(dist_obj)
+    d <- PointToSegment(dist_obj)
     
-    # If the event is at a distance less or equal 'z' from the edge connecting
-    # both given points (the road), then is counted as an event of that road
-    if(min(node1[1], node2[1]) - z <= ep[1] & ep[1] <= max(node1[1], node2[1]) + z & 
-       min(node1[2], node2[2]) - z <= ep[2] & ep[2] <= max(node1[2], node2[2]) + z & 
-       d <= z){
+    # If the event is at a distance less or equal 'z' from the edge (segment) 
+    # connecting both given points (the road), then is counted as an event of that road
+    if(d <= z){
       indicator <- indicator + 1
-    } 
+    }
   }
   edge_intensity <- indicator/edge_dist
   

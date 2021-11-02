@@ -488,3 +488,16 @@ for (node_id in V(g)) {
 
 # Plotting subgraph
 plot_neighborhood(intnet_und, 'V318')
+plot_neighborhood(intnet_und, 'V39')
+
+v39v61_data <- list(p1=c(vertex_attr(g, 'xcoord', 'V39'), vertex_attr(g, 'ycoord', 'V39')), 
+                    p2=c(vertex_attr(g, 'xcoord', 'V61'), vertex_attr(g, 'ycoord', 'V61')), 
+                    ep=c(750422, 4430854))
+class(v39v61_data) <- c(class(v39v61_data), 'netTools')
+PointToSegment(v39v61_data)
+
+ref_nodemean[[39]]
+nodemean[[39]]
+
+ref_edgeint[[39]]
+edge_attr(g, 'intensity', E(g)[get.edge.ids(g, c(39,61))])

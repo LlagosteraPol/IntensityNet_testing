@@ -313,13 +313,13 @@ PointToLine <- function(obj){
 }
 
 
-#' Return the perpendicular distance between an event and the line formed by two nodes.
+#' Return the distance between an event and the line (not segment) formed by two nodes.
 #'
 #' @name PointToLine.netTools  
 #'
 #' @param obj netTools object -> list(p1:c(coordx, coordy), p2:c(coordx, coordy), e:c(coordx, coordy))
 #' 
-#' @return the perpendicular distance
+#' @return the distance to the line
 #' 
 PointToLine.netTools <- function(obj){
   p1 <- obj$p1
@@ -332,6 +332,54 @@ PointToLine.netTools <- function(obj){
   d <- abs(det(m))/sqrt(sum(v1*v1))
   
   d
+}
+
+
+PointToSegment <- function(obj){
+  UseMethod("PointToSegment")
+}
+
+
+#' Return the shortest distance between an event and the segment formed by two nodes.
+#'
+#' @name PointToSegment.netTools  
+#'
+#' @param obj netTools object -> list(p1:c(coordx, coordy), p2:c(coordx, coordy), e:c(coordx, coordy))
+#' 
+#' @return distance to the segment
+#' 
+PointToSegment <- function(obj) {
+  p1 <- obj$p1
+  p2 <- obj$p2
+  ep <- obj$ep
+  A <- ep[1] - p1[1]
+  B <- ep[2] - p1[2]
+  C <- p2[1] - p1[1]
+  D <- p2[2] - p1[2]
+  
+  dot <- A * C + B * D
+  len_sq <- C * C + D * D
+  param <- -1
+  if (len_sq != 0){
+    param <- dot / len_sq # in case of 0 length line
+  } 
+  
+  if (param < 0) {
+    xx <- p1[1]
+    yy <- p1[2]
+  }
+  else if (param > 1) {
+    xx <- p2[1]
+    yy <- p2[2]
+  }
+  else {
+    xx <- p1[1] + param * C
+    yy <- p1[2] + param * D
+  }
+  
+  dx <- ep[1] - xx
+  dy <- ep[2] - yy
+  return(sqrt(dx * dx + dy * dy))
 }
 
 
