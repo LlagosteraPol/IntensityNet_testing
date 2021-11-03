@@ -21,7 +21,7 @@ castellon <- read.table("../../Data/castellon.txt", header=TRUE, row.names=1) # 
 nodes <- read.table("../../Data/nodes.txt", header=TRUE, row.names=1) # says first column are rownames
 
 # Event (crime coordinates)
-crimes <- read.table("../../Data/crimes.txt", header=TRUE, row.names=1) # says first column are rownames
+crimes <- read.table("../../Data/crimes_corrected.txt", header=TRUE, row.names=1) # says first column are rownames
 
 #subset of events
 crim <- crimes[11:111,] # From crimes, take 11 to 111 (both included)
@@ -167,10 +167,8 @@ pdf("Plots/area_with_grid.pdf")
 plot(intnet_all, enable_grid = FALSE, axis=TRUE)
 dev.off()
 
-
-
 plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
 
 gplot(intnet_all)
-gplot(intnet_all, heatmap = 'locmoran')
-gplot(intnet_all, heatmap = 'locg')
+gplot(intnet_all, heatmap = 'moran_i')
+gplot(intnet_all, heatmap = 'geary_g')

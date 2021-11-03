@@ -487,7 +487,7 @@ for (node_id in V(g)) {
 }
 
 # Plotting subgraph
-plot_neighborhood(intnet_und, 'V318')
+plot_neighborhood(intnet_und, 'V300')
 plot_neighborhood(intnet_und, 'V39')
 
 v39v61_data <- list(p1=c(vertex_attr(g, 'xcoord', 'V39'), vertex_attr(g, 'ycoord', 'V39')), 
@@ -501,3 +501,52 @@ nodemean[[39]]
 
 ref_edgeint[[39]]
 edge_attr(g, 'intensity', E(g)[get.edge.ids(g, c(39,61))])
+
+plot(nodes)
+points(crimes, col='red')
+
+coordsTest <- read.table("../../Data/coordsTEST.txt", header=TRUE) # says first column are rownames
+plot(nodes)
+points(test_df, col="red")
+points(coordsTest, col="blue")
+
+node_coords <- as.matrix(nodes)
+rownames(node_coords) <- sprintf("V%s",seq(1:nrow(node_coords)))
+data_df <- data.frame(xcoord = round(nodes$cx), 
+                      ycoord = nodes$cy)
+edgelist <- get.edgelist(g)
+#convert to a four column edge data frame with source and destination coordinates
+edges <- data.frame(node_coords[edgelist[,1],], node_coords[edgelist[,2],])
+colnames(edges) <- c("xcoord1","ycoord1","xcoord2","ycoord2")
+
+
+data_df$cat <- "df1"
+test_df$cat <- "df2"
+all_df <- rbind(data_df, test_df)
+ggplot(all_df, aes(x=xcoord,y=ycoord, color=cat)) + 
+  geom_point(shape=19, size=1.5) +
+  geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
+               data=edges, 
+               size = 0.5, 
+               colour="grey") +
+  scale_y_continuous(name="y-coordinate") + 
+  scale_x_continuous(name="x-coordinate") + theme_bw()
+
+# New data
+load("../../Data/network-CS.RData")
+
+test_df <- data.frame(xcoord = round(c1213CS$data[,1]$x) - 14, ycoord = round(c1213CS$data[,2]$y) - 77)
+
+write.table(test_df, file="../../Data/crimes_corrected.txt") # keeps the rownames
+
+t1 <- test_df[test_df$ycoord <= 4428800,] # Node coordinate reference point
+t2 <- data_df[data_df$ycoord <= 4428800,] # Event coordinate reference point
+
+test_mtx <- cbind(c1213CS[["domain"]][["lines"]][["marks"]][["aa_utmx0"]])
+test_mtx <- cbind(test_mtx, c1213CS[["domain"]][["lines"]][["marks"]][["aa_utmy0"]])
+# Test_mtx == test_df
+test_mtx2 <- cbind(c1213CS[["domain"]][["lines"]][["marks"]][["aa_utmx1"]])
+test_mtx2 <- cbind(test_mtx2, c1213CS[["domain"]][["lines"]][["marks"]][["aa_utmy1"]])
+
+head(c1213CS$data)
+
