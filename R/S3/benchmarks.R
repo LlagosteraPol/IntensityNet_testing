@@ -30,7 +30,7 @@ crim <- crimes[11:111,] # From crimes, take 11 to 111 (both included)
 intnet_und <- intensitynet(castellon, nodes, crim)
 
 castellon_obj <-list(mtx = castellon)
-class(Castellon_obj) <- "netTools"
+class(castellon_obj) <- "netTools"
 dir_castellon <-  Undirected2RandomDirectedAdjMtx(castellon_obj)
 intnet_dir <- intensitynet(dir_castellon, nodes, crim, graph_type='directed')
 
@@ -85,7 +85,10 @@ if(intnet_all$graph_type == 'undirected'){
     if(V(g)[node_id]$intensity>0) cat(node_id,": ",V(g)[node_id]$intensity, "\n")
   }
   
-  correlations <- NodeGeneralCorrelation(intnet_all, dep_type = 'correlation', lag_max = 2, 
+  gen_corr <- NodeGeneralCorrelation(intnet_all, dep_type = 'correlation', lag_max = 2, 
+                                         intensity = vertex_attr(g)$intensity)
+  
+  gen_cov <- NodeGeneralCorrelation(intnet_all, dep_type = 'covariance', lag_max = 2, 
                                          intensity = vertex_attr(g)$intensity)
   
   data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = vertex_attr(g)$intensity)
