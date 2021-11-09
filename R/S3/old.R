@@ -245,3 +245,148 @@ GeoreferencedPlot.netTools = function(obj){
          vertex.size2=2)
   }
 }
+
+
+GeoreferencedGgplot2.netTools = function(obj, ...){
+  arguments <- list(...)
+  
+  g <- obj$graph
+  data_df <- obj$data_df
+  mode <- obj$mode
+  
+  node_coords <- data.frame(xcoord = vertex_attr(g)$xcoord, ycoord = vertex_attr(g)$ycoord)
+  #rownames(node_coords) <- sprintf("V%s",seq(1:nrow(node_coords)))
+  rownames(node_coords) <- vertex_attr(g)$name
+  #get edges, which are pairs of node IDs
+  edgelist <- get.edgelist(g)
+  #convert to a four column edge data frame with source and destination coordinates
+  edges <- data.frame(node_coords[edgelist[,1],], node_coords[edgelist[,2],])
+  colnames(edges) <- c("xcoord1","ycoord1","xcoord2","ycoord2")
+  
+  if(is.null(data_df$intensity) || is.na(data_df$heattype)){
+    ggplot(data_df, aes(xcoord, ycoord), ...) + 
+      geom_point(shape = 19, size = 1.5) +
+      geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+                   data = edges, 
+                   size = 0.5, 
+                   colour = "grey") +
+      scale_y_continuous(name = "y-coordinate") + 
+      scale_x_continuous(name = "x-coordinate") + theme_bw() +
+      theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+    
+  }else{
+    if(mode == 'moran_i') {
+      ggplot(data_df, aes(xcoord, ycoord), ...) + 
+        geom_point(aes(colour=as.factor(heattype)), shape=19, size=1.5) +
+        geom_tile(aes(fill=as.factor(heattype)), show.legend = FALSE) + 
+        labs(title = 'Moran-i Heatmap\n') +
+        scale_color_manual(values = c("gray","skyblue", "yellow", "darkorange", "red4"), 
+                           name = "", breaks=c(1,2,3,4,5), 
+                           labels = c("insignificant","low-low","low-high","high-low","high-high")) +
+        geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+                     data = edges, 
+                     size = 0.5, 
+                     colour = "grey") +
+        scale_y_continuous(name = "y-coordinate") + 
+        scale_x_continuous(name = "x-coordinate") + theme_bw()
+    }else if(mode == 'geary'){
+      ggplot(data_df, aes(xcoord, ycoord), ...) + 
+        geom_point(aes(colour=as.factor(heattype)), shape=19, size=1.5) +
+        geom_tile(aes(fill=as.factor(heattype)), show.legend = FALSE) + 
+        labs(title = 'Geary-c Heatmap\n') +
+        scale_color_manual(values=c("green", "gray", "red"), 
+                           name="", breaks=c(1,2,3), labels=c("positive auto.","no auto.","negative auto.")) +
+        geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
+                     data=edges, 
+                     size = 0.5, 
+                     colour="grey") +
+        scale_y_continuous(name="y-coordinate") + 
+        scale_x_continuous(name="x-coordinate") + theme_bw() +
+        theme(plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+      # ggplot(data_df, aes(xcoord,ycoord), ...) +  
+      #   geom_point(alpha = 0) + 
+      #   geom_tile()+ 
+      #   geom_text(aes(label=heattype),hjust=0, vjust=0, size=3, check_overlap = T) +
+      #   scale_colour_grey(guide='none') + 
+      #   geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+      #                data = edges, 
+      #                size = 0.5, 
+      #                colour = "grey") +
+      #   scale_y_continuous(name="y-coordinate") + 
+      #   scale_x_continuous(name="x-coordinate") + theme_bw() 
+    }else if(mode=='intensity'){
+      ggplot(data_df, aes(xcoord, ycoord, colour = heattype), ...) + 
+        geom_point(shape=19, size=1.5,) +
+        scale_fill_viridis() +
+        labs(title = 'Intensity Heatmap\n', color = 'Norm. intensity') +
+        geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
+                     data=edges, 
+                     size = 0.5, 
+                     colour="grey") +
+        scale_y_continuous(name="y-coordinate") + 
+        scale_x_continuous(name="x-coordinate") + theme_bw() +
+        theme(legend.title = element_text(face = "bold"),
+              plot.title = element_text(size = 14, face = "bold", hjust = 0.5))
+    }
+  }
+}
+
+
+CalculateEventIntensities.intensitynetUnd = function(obj){
+  g <- obj$graph
+  intensities <- obj$intensities
+  #edge_counts <- c()
+  counts <- c()
+  
+  # start_time <- Sys.time() # debug only
+  # pb = txtProgressBar(min = 0, max = gsize(g), initial = 0) 
+  # cat("Calculating edge intensities...\n")
+  # for(edge_id in E(g)){
+  #   setTxtProgressBar(pb, edge_id)
+  #   if(is.null(edge_attr(g, 'intensity', edge_id))){
+  #     #Adds result of Edgewise intenisty function to 'edge_counts'
+  #     edge_counts[[edge_id]] <- EdgeIntensity(obj, ends(g, edge_id)[1], ends(g, edge_id)[2])
+  #   }else if(is.na(edge_attr(g, 'intensity', edge_id))[1]){
+  #     edge_counts[[edge_id]] <- 0
+  #   }else{
+  #     edge_counts[[edge_id]] <- edge_attr(g, 'intensity', edge_id)
+  #   }
+  # }
+  # close(pb)
+  # cat(paste0("Time: ", Sys.time() - start_time, "\n")) # debug only
+  # 
+  # # Encapsulate Edge intensities to pass them to 'MeanNodeIntensity' function to prevent its re-calculation
+  # tmp_obj <- SetNetworkAttribute(obj = obj, where = 'edge', name = 'intensity', value = as.matrix(edge_counts))
+  
+  tmp_obj <- AllEdgeIntensities.intensitynet(obj)
+  g <- tmp_obj$graph
+  
+  pb = txtProgressBar(min = 0, max = gorder(g), initial = 0) 
+  cat("Calculating node intensities...\n")
+  # check if the intensities was previously calculated, if not, calculate them
+  for(node_id in V(g)){
+    
+    setTxtProgressBar(pb,node_id)
+    
+    if(is.null(vertex_attr(g, 'intensity', node_id))){
+      if(igraph::degree(g, node_id) > 0){
+        #Adds result of Nodewise mean intensity function to 'counts'
+        counts[[node_id]]  <- MeanNodeIntensity(tmp_obj, node_id)
+      }else{
+        # Counts for isolated nodes or NA values
+        counts[[node_id]] <- 0
+      }
+    }else if(is.na(vertex_attr(g, 'intensity', node_id))[1]){
+      counts[[node_id]] <- 0
+    }else{
+      counts[[node_id]] <- vertex_attr(g, 'intensity', node_id)
+    }
+  }
+  close(pb)
+  
+  g <- g %>% set_vertex_attr(name = "intensity", value = as.matrix(counts))
+  
+  intnet <- list(graph = g, events = obj$events, graph_type = obj$graph_type, distances_mtx = obj$distances_mtx)
+  attr(intnet, 'class') <- c("intensitynet", "intensitynetUnd")
+  return(intnet)
+}

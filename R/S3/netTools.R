@@ -1,9 +1,62 @@
 #TODO: Declare all these functions as non-visible at namespace
 
+#----------------------------------------UseMethod's----------------------------------------
 
 InitGraph <- function(obj){
   UseMethod("InitGraph")
 }
+
+
+CalculateDistancesMtx <- function(obj){
+  UseMethod("CalculateDistancesMtx")
+}
+
+
+SetNetCoords <- function(obj){
+  UseMethod("SetNetCoords")
+}
+
+
+SetEdgeIntensity <- function(obj){
+  UseMethod("SetEdgeIntensity")
+}
+
+
+SetNodeIntensity <- function(obj){
+  UseMethod("SetNodeIntensity")
+}
+
+
+ShortestNodeDistance <- function(obj){
+  UseMethod("ShortestNodeDistance")
+}
+
+
+GeoreferencedPlot <- function(obj, node_label='none', edge_label='none', ...){
+  UseMethod("GeoreferencedPlot")
+}
+
+
+GeoreferencedGgplot2 <- function(obj, ...){
+  UseMethod("GeoreferencedGgplot2")
+}
+
+
+PointToLine <- function(obj){
+  UseMethod("PointToLine")
+}
+
+
+PointToSegment <- function(obj){
+  UseMethod("PointToSegment")
+}
+
+
+Undirected2RandomDirectedAdjMtx <- function(obj){
+  UseMethod("Undirected2RandomDirectedAdjMtx")
+}
+#-------------------------------------------------------------------------------------------
+
 
 #' Creates an igraph network with the given data
 #'
@@ -21,8 +74,14 @@ InitGraph.netTools <- function(obj){
   node_coords <- obj$node_coords
     
   weighted_mtx = adjacency_mtx * distances_mtx
-  if(graph_type == 'undirected') g <- graph_from_adjacency_matrix(weighted_mtx, mode = graph_type, weighted=TRUE)
-  else  g <- graph_from_adjacency_matrix(weighted_mtx, mode = 'directed', weighted=TRUE)
+  if(is.null(colnames(weighted_mtx))){
+    colnames(weighted_mtx) <- sprintf("V%s", seq(1:nrow(weighted_mtx)))
+  } 
+  if(graph_type == 'undirected'){
+    g <- graph_from_adjacency_matrix(weighted_mtx, mode = graph_type, weighted = TRUE)
+  } else {
+    g <- graph_from_adjacency_matrix(weighted_mtx, mode = 'directed', weighted = TRUE)
+  } 
   
   net_coords <- list(graph = g, node_coords = node_coords)
   class(net_coords) <- "netTools"
@@ -32,34 +91,6 @@ InitGraph.netTools <- function(obj){
   igraph::delete.vertices(g, igraph::degree(g)==0)
   
   g # return
-}
-
-SetNetCoords <- function(obj){
-  UseMethod("SetNetCoords")
-}
-
-
-#' Set igraph network node coordinates as its attributes
-#'
-#' @name InitGraph.netTools 
-#'
-#' @param obj netTools object -> list(graph: igraph, list(): with the node coordinates 'x' and 'y') 
-#' 
-#' @return igraph network with the given coordinates as the attributes of the nodes
-#' 
-SetNetCoords.netTools = function(obj){
-  g <- obj$graph
-  x_coord_node <- obj$node_coords[, 1]
-  y_coord_node <- obj$node_coords[, 2]
-  
-  # TODO: change x and y to long (longitude) and lat (latitude), beware of the coordinate system type (e.g WGS84)
-  g <- g %>% set_vertex_attr(name = "xcoord", value = x_coord_node) %>% 
-    set_vertex_attr(name = "ycoord", value = y_coord_node)
-  g
-}
-
-CalculateDistancesMtx <- function(obj){
-  UseMethod("CalculateDistancesMtx")
 }
 
 
@@ -77,14 +108,30 @@ CalculateDistancesMtx.netTools <- function(obj){
   
   distances_mtx <- pairdist(ppp(x_coord_node,
                                 y_coord_node,
-                                xrange=c(min(as.numeric(x_coord_node)), max(as.numeric(x_coord_node))),
-                                yrange=c(min(as.numeric(y_coord_node)), max(as.numeric(y_coord_node)))))
-  rownames(distances_mtx) <- colnames(distances_mtx) <- sprintf("V%s",seq(1:ncol(distances_mtx)))
+                                xrange = c(min(as.numeric(x_coord_node)), max(as.numeric(x_coord_node))),
+                                yrange = c(min(as.numeric(y_coord_node)), max(as.numeric(y_coord_node)))))
+  rownames(distances_mtx) <- colnames(distances_mtx) <- sprintf("V%s", seq(1:ncol(distances_mtx)))
   distances_mtx
 }
 
-SetEdgeIntensity <- function(obj){
-  UseMethod("SetEdgeIntensity")
+
+#' Set igraph network node coordinates as its attributes
+#'
+#' @name InitGraph.netTools 
+#'
+#' @param obj netTools object -> list(graph: igraph, list(): with the node coordinates 'x' and 'y') 
+#' 
+#' @return igraph network with the given coordinates as the attributes of the nodes
+#' 
+SetNetCoords.netTools = function(obj){
+  g <- obj$graph
+  x_coord_node <- obj$node_coords[, 1]
+  y_coord_node <- obj$node_coords[, 2]
+  
+  g <- g %>% 
+       set_vertex_attr(name = "xcoord", value = x_coord_node) %>% 
+       set_vertex_attr(name = "ycoord", value = y_coord_node)
+  g
 }
 
 
@@ -96,7 +143,6 @@ SetEdgeIntensity <- function(obj){
 #' 
 #' @return igraph network with the given intensities as an attributes of the edges
 #' 
-#TODO: Declare non-visible at namespace
 SetEdgeIntensity.netTools <- function(obj){
   g <- obj$graph
   node_id1 <- obj$node_id1
@@ -106,10 +152,6 @@ SetEdgeIntensity.netTools <- function(obj){
   edge_id <- get.edge.ids(g, c(node_id1, node_id2))
   g <- g %>% set_edge_attr(name = "intensity", index = edge_id, value = intensity)
   g
-}
-
-SetNodeIntensity <- function(obj){
-  UseMethod("SetNodeIntensity")
 }
 
 
@@ -130,20 +172,15 @@ SetNodeIntensity.netTools = function(obj){
 }
 
 
-ShortestDistance <- function(obj){
-  UseMethod("ShortestDistance")
-}
-
-
 #' Calculates the shortest distance path between two nodes 
 #'
-#' @name ShortestDistance.netTools 
+#' @name ShortestNodeDistance.netTools 
 #'
 #' @param obj netTools object -> list(graph: igraph, node_id1: node id, node_id2: node id, distances_mtx: distances matrix))
 #' 
 #' @return distance of the path and the nodes of the path
 #' 
-ShortestDistance.netTools = function(obj){
+ShortestNodeDistance.netTools = function(obj){
   g <- obj$graph
   node_id1 <- obj$node_id1
   node_id2 <- obj$node_id2
@@ -157,10 +194,6 @@ ShortestDistance.netTools = function(obj){
     weight_sum <- length(weighted_path)
   }
   list(weight = weight_sum, path = weighted_path)  
-}
-
-GeoreferencedPlot <- function(obj, node_label='none', edge_label='none', ...){
-  UseMethod("GeoreferencedPlot")
 }
 
 
@@ -242,16 +275,12 @@ GeoreferencedPlot.netTools = function(obj, vertex_intensity='', edge_intensity='
   }
   else{
     plot(g, 
-         vertex.label=NA, 
-         vertex.size=2,
-         vertex.size2=2)
+         vertex.label = NA, 
+         vertex.size = 2,
+         vertex.size2 = 2)
   }
 }
 
-
-GeoreferencedGgplot2 <- function(obj, ...){
-  UseMethod("GeoreferencedGgplot2")
-}
 
 GeoreferencedGgplot2.netTools = function(obj, ...){
   arguments <- list(...)
@@ -261,55 +290,89 @@ GeoreferencedGgplot2.netTools = function(obj, ...){
   mode <- obj$mode
  
   node_coords <- data.frame(xcoord = vertex_attr(g)$xcoord, ycoord = vertex_attr(g)$ycoord)
-  rownames(node_coords) <- sprintf("V%s",seq(1:nrow(node_coords)))
+  rownames(node_coords) <- vertex_attr(g)$name
   #get edges, which are pairs of node IDs
   edgelist <- get.edgelist(g)
   #convert to a four column edge data frame with source and destination coordinates
   edges <- data.frame(node_coords[edgelist[,1],], node_coords[edgelist[,2],])
   colnames(edges) <- c("xcoord1","ycoord1","xcoord2","ycoord2")
   
-  if(is.null(data_df$intensity) || is.na(data_df$heatmap)){
-    ggplot(data_df, aes(xcoord,ycoord), ...) + 
-      geom_point(shape=19, size=1.5) +
-      geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
-                   data=edges, 
+  if(is.null(data_df$intensity) || is.na(data_df$heattype)){
+    ggplot(data_df, aes(xcoord, ycoord), ...) + 
+      geom_point(shape = 19, 
+                 size = 1.5) +
+      geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+                   data = edges, 
                    size = 0.5, 
-                   colour="grey") +
-      scale_y_continuous(name="y-coordinate") + 
-      scale_x_continuous(name="x-coordinate") + theme_bw()
+                   colour = "grey") +
+      scale_y_continuous(name = "y-coordinate") + 
+      scale_x_continuous(name = "x-coordinate") + 
+      theme_bw()
 
   }else{
-    if(mode=='moran_i') {
-      ggplot(data_df, aes(xcoord,ycoord), ...) + 
-        geom_point(aes(colour=as.factor(heatmap)), shape=19, size=1.5) +
-        geom_tile(aes(fill=as.factor(heatmap)), show.legend = FALSE) + 
-        scale_color_manual(values=c("gray","skyblue", "yellow", "darkorange", "red4"), 
-                           name="", breaks=c(0,1,2,3,4), labels=c("insignificant","low-low","low-high","high-low","high-high")) +
-        geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
-                     data=edges, 
-                     size = 0.5, 
-                     colour="grey") +
-        scale_y_continuous(name="y-coordinate") + 
-        scale_x_continuous(name="x-coordinate") + theme_bw()
-    }else if(mode=='geary_g'){
-      ggplot(data_df, aes(xcoord,ycoord), ...) +  
-        geom_point(alpha = 0) + 
-        geom_tile()+ 
-        geom_text(aes(label=heatmap),hjust=0, vjust=0, size=3, check_overlap = T) +
-        scale_colour_grey(guide='none') + 
+    if(mode == 'moran_i') {
+      ggplot(data_df, aes(xcoord, ycoord), ...) + 
+        geom_point(aes( colour = as.factor(heattype) ), 
+                   shape = 19, 
+                   size = 1.5) +
+        geom_tile(aes( fill = as.factor(heattype) ), 
+                  show.legend = FALSE) + 
+        labs( title = 'Moran-i Heatmap\n' ) +
+        scale_color_manual(values = c("gray","skyblue", "yellow", "darkorange", "red4"), 
+                           name = "", breaks=c(1,2,3,4,5), 
+                           labels = c("insignificant","low-low","low-high","high-low","high-high") ) +
         geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
                      data = edges, 
                      size = 0.5, 
                      colour = "grey") +
-        scale_y_continuous(name="y-coordinate") + 
-        scale_x_continuous(name="x-coordinate") + theme_bw() 
+        scale_y_continuous(name = "y-coordinate") + 
+        scale_x_continuous(name = "x-coordinate") + 
+        theme_bw() +
+        theme( plot.title = element_text(size = 14, 
+                                         face = "bold", 
+                                         hjust = 0.5) )
+    }else if(mode == 'geary'){
+      ggplot(data_df, aes(xcoord, ycoord), ...) + 
+        geom_point( aes( colour = as.factor(heattype) ), 
+                    shape = 19, 
+                    size = 1.5 ) +
+        geom_tile( aes( fill = as.factor(heattype) ), 
+                   show.legend = FALSE ) + 
+        labs(title = 'Geary-c Heatmap\n') +
+        scale_color_manual(values = c("green", "gray", "red"), 
+                           name = "", 
+                           breaks = c(1,2,3), 
+                           labels = c("positive auto.","no auto.","negative auto.") ) +
+        geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+                     data = edges, 
+                     size = 0.5, 
+                     colour = "grey") +
+        scale_y_continuous( name = "y-coordinate" ) + 
+        scale_x_continuous( name = "x-coordinate" ) + 
+        theme_bw() +
+        theme( plot.title = element_text( size = 14, 
+                                          face = "bold", 
+                                          hjust = 0.5 ) )
+    }else if( mode == 'intensity'){
+      ggplot(data_df, aes(xcoord, ycoord, colour = heattype), ...) + 
+        geom_point(shape = 19, 
+                   size = 1.5) +
+        scale_fill_viridis() +
+        labs(title = 'Intensity Heatmap\n', 
+             color = 'Norm. intensity') +
+        geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+                     data = edges, 
+                     size = 0.5, 
+                     colour="grey") +
+        scale_y_continuous(name = "y-coordinate") + 
+        scale_x_continuous(name = "x-coordinate") + 
+        theme_bw() +
+        theme(legend.title = element_text(face = "bold"),
+              plot.title = element_text( size = 14, 
+                                         face = "bold", 
+                                         hjust = 0.5) )
     }
   }
-}
-
-
-PointToLine <- function(obj){
-  UseMethod("PointToLine")
 }
 
 
@@ -335,11 +398,6 @@ PointToLine.netTools <- function(obj){
 }
 
 
-PointToSegment <- function(obj){
-  UseMethod("PointToSegment")
-}
-
-
 #' Return the shortest distance between an event and the segment formed by two nodes.
 #'
 #' @name PointToSegment.netTools  
@@ -349,6 +407,7 @@ PointToSegment <- function(obj){
 #' @return distance to the segment
 #' 
 PointToSegment <- function(obj) {
+  #start_time <- Sys.time() # debug only
   p1 <- obj$p1
   p2 <- obj$p2
   ep <- obj$ep
@@ -379,13 +438,10 @@ PointToSegment <- function(obj) {
   
   dx <- ep[1] - xx
   dy <- ep[2] - yy
+  #cat(paste0("PointToSegment time: ", Sys.time() - start_time, "\n")) # debug only
   return(sqrt(dx * dx + dy * dy))
 }
 
-
-Undirected2RandomDirectedAdjMtx <- function(obj){
-  UseMethod("Undirected2RandomDirectedAdjMtx")
-}
 
 #' Creates a directed adjacency matrix from an Undirected one with random directions (in out edges) 
 #' but with the same connections between nodes.

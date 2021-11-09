@@ -23,7 +23,7 @@ crim <- crimes[11:111,] # From crimes, take 11 to 111 (both included)
 
 init_graph <- function(obj){
   weighted_mtx = obj$adjacency_mtx * obj$distances_mtx
-  g <- graph_from_adjacency_matrix(weighted_mtx, mode = obj$graph_type, weighted=TRUE)
+  g <- graph_from_adjacency_matrix(weighted_mtx, mode = obj$graph_type, weighted = TRUE)
   
   net_coords <- list(graph = g, node_coords = obj$node_coords)
   class(net_coords) <- "netTools"
@@ -395,12 +395,12 @@ length(which(quad_sig==0)) # To count values
 data_df <- data.frame(intensity = vertex_attr(g)$intensity , 
                       xcoord = node_coords$xcoord, 
                       ycoord = node_coords$ycoord, 
-                      heatmap = NA)
+                      heattype = NA)
 
 data_df_i <- data.frame(intensity = vertex_attr(g)$intensity , 
                         xcoord = node_coords$xcoord, 
                         ycoord = node_coords$ycoord, 
-                        heatmap = quad_sig)
+                        heattype = quad_sig)
 
 b_listw <- nb2listw(nb, style="B", zero.policy=TRUE) 
 # local net G
@@ -410,7 +410,7 @@ locg <- unlist(as.list(round(locg_all, 1)))
 data_df_g <- data.frame(intensity = vertex_attr(g)$intensity, 
                       xcoord = node_coords$xcoord, 
                       ycoord = node_coords$ycoord, 
-                      heatmap = locg)
+                      heattype = locg)
 
 
 ggplot(data_df, aes(xcoord,ycoord)) + 
@@ -424,8 +424,8 @@ ggplot(data_df, aes(xcoord,ycoord)) +
 
 
 ggplot(data_df_i, aes(xcoord,ycoord)) + 
-  geom_point(aes(colour=as.factor(heatmap)), shape=19, size=1.5) + 
-  geom_tile(aes(fill=as.factor(heatmap)), show.legend = FALSE)+ 
+  geom_point(aes(colour=as.factor(heattype)), shape=19, size=1.5) + 
+  geom_tile(aes(fill=as.factor(heattype)), show.legend = FALSE)+ 
   scale_color_manual(values=c("gray","skyblue", "yellow", "darkorange", "red4"), 
                      name="", breaks=c(0,1,2,3,4), labels=c("insignificant","low-low","low-high","high-low","high-high")) +
   geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
@@ -439,7 +439,7 @@ ggplot(data_df_i, aes(xcoord,ycoord)) +
 ggplot(data_df_g, aes(xcoord,ycoord)) +  
   geom_point(alpha = 0) + 
   geom_tile()+ 
-  geom_text(aes(label=heatmap),hjust=0, vjust=0, size=3, check_overlap = T) +
+  geom_text(aes(label=heattype),hjust=0, vjust=0, size=3, check_overlap = T) +
   scale_colour_grey(guide='none') + 
   geom_segment(aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
                data = edges, 
@@ -449,7 +449,7 @@ ggplot(data_df_g, aes(xcoord,ycoord)) +
   scale_x_continuous(name="x-coordinate") + theme_bw() 
   
   
-ggplot_net(intnet, heatmap='locmoran')
+ggplot_net(intnet, heattype='locmoran')
 
 
 #----------------------------------COMPARE DATA WITH A REFERENCE-------------------------------------
@@ -520,22 +520,13 @@ edges <- data.frame(node_coords[edgelist[,1],], node_coords[edgelist[,2],])
 colnames(edges) <- c("xcoord1","ycoord1","xcoord2","ycoord2")
 
 
-data_df$cat <- "df1"
-test_df$cat <- "df2"
-all_df <- rbind(data_df, test_df)
-ggplot(all_df, aes(x=xcoord,y=ycoord, color=cat)) + 
-  geom_point(shape=19, size=1.5) +
-  geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
-               data=edges, 
-               size = 0.5, 
-               colour="grey") +
-  scale_y_continuous(name="y-coordinate") + 
-  scale_x_continuous(name="x-coordinate") + theme_bw()
+
 
 # New data
 load("../../Data/network-CS.RData")
 
 test_df <- data.frame(xcoord = round(c1213CS$data[,1]$x) - 14, ycoord = round(c1213CS$data[,2]$y) - 77)
+test_df2 <- data.frame(xcoord = round(c1213CS$data[,1]$x), ycoord = round(c1213CS$data[,2]$y))
 
 write.table(test_df, file="../../Data/crimes_corrected.txt") # keeps the rownames
 
@@ -550,3 +541,67 @@ test_mtx2 <- cbind(test_mtx2, c1213CS[["domain"]][["lines"]][["marks"]][["aa_utm
 
 head(c1213CS$data)
 
+data_df$cat <- "df1"
+test_df$cat <- "df2"
+test_df2$cat <- "df2"
+all_df <- rbind(data_df, test_df)
+ggplot(all_df, aes(x=xcoord,y=ycoord, color=cat)) + 
+  geom_point(shape=19, size=1.5) +
+  geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
+               data=edges, 
+               size = 0.5, 
+               colour="grey") +
+  scale_y_continuous(name="y-coordinate") + 
+  scale_x_continuous(name="x-coordinate") + theme_bw()
+
+
+#-----------------------------------SPATSTAT CHICAGO DATA---------------------------------------------
+data(chicago)
+plot(chicago)
+chicago_df <- as.data.frame(chicago[["data"]])
+edges <- cbind(chicago[["domain"]][["from"]], chicago[["domain"]][["to"]])
+chicago_net <- graph_from_edgelist(edges)
+
+chicago_adj_mtx <- as.matrix(as_adjacency_matrix(chicago_net))
+chicago_node_coords <- data.frame(xcoord = chicago[["domain"]][["vertices"]][["x"]], 
+                                  ycoord = chicago[["domain"]][["vertices"]][["y"]])
+
+chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
+
+assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
+                                  ycoord = chicago_assault[,2])
+
+node_coords_obj <- list(node_coords = chicago_node_coords)
+class(node_coords_obj) <- "netTools"
+dist_mtx <- CalculateDistancesMtx(node_coords_obj)
+
+intnet_chicago <- intensitynet(chicago_adj_mtx, 
+                               node_coords = chicago_node_coords, 
+                               events_mtx = assault_coordinates)
+intnet_chicago <- CalculateEventIntensities(intnet_chicago)
+chicago_g <- intnet_chicago$graph
+gplot(intnet_chicago, heattype='moran_i')
+
+
+
+chicago_edge_coords <- data.frame(xcoord1 = chicago[["domain"]][["lines"]][["ends"]][["x0"]],
+                                  ycoord1 = chicago[["domain"]][["lines"]][["ends"]][["y0"]],
+                                  xcoord2 = chicago[["domain"]][["lines"]][["ends"]][["x1"]],
+                                  ycoord2 = chicago[["domain"]][["lines"]][["ends"]][["y1"]]  )
+chicago_node_coords$cat <- "nodes"
+assault_coordinates$cat <- "events"
+
+chicago_plot <- rbind(chicago_node_coords, assault_coordinates)
+ggplot(chicago_plot, aes(x=xcoord,y=ycoord, color=cat)) + 
+  geom_point(shape=19, size=1.5) +
+  geom_segment(aes(x=xcoord1, y=ycoord1, xend = xcoord2, yend = ycoord2), 
+               data=chicago_edge_coords, 
+               size = 0.5, 
+               colour="grey") +
+  scale_y_continuous(name="y-coordinate") + 
+  scale_x_continuous(name="x-coordinate") + theme_bw()
+
+
+#-----------------------------------------TESTING WINDOW SUB_GRAPH--------------------------------------
+
+sub_intnet <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_coords = c(4429500, 4431500))

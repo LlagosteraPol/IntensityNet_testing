@@ -9,6 +9,7 @@ require(roxygen2)
 require(sna)
 require(spatstat)
 require(spdep)
+require(viridis)
 require(visNetwork)
 
 source("./intensitynetDir.R", local = TRUE)
@@ -22,42 +23,43 @@ source("./netTools.R", local = TRUE)
 #'
 #' @param adjacency_mtx Network adjacency matrix
 #' @param node_coords Nodes latitude and longitude matrix
-#' @param events_mtx Events latitude and longitude matrix
+#' @param event_coords Events latitude and longitude matrix
 #' @param graph_type Network type: 'undirected' (default), 'directed' or 'mixed' 
 #' 
 #' @return intensitynet object containing: graph=<igraph>, events = <matrix>, graph_type = c('directed', 'undirected', 'mixed'), 
 #' distances = <matrix>
 #' 
-intensitynet <- function(adjacency_mtx, node_coords, events_mtx, graph_type = 'undirected'){
-  
-  if(class(adjacency_mtx) == "data.frame"){
+intensitynet <- function(adjacency_mtx, node_coords, event_coords, graph_type = 'undirected'){
+
+  if (class(adjacency_mtx) == "data.frame") {
     adjacency_mtx <- as.matrix(adjacency_mtx)
   }
-  
-  if(class(node_coords) == "data.frame"){
+
+  if (class(node_coords) == "data.frame") {
     node_coords <- as.matrix(node_coords)
   }
-  
-  if(class(events_mtx) == "data.frame"){
-    events_mtx <- as.matrix(events_mtx)
+
+  if (class(event_coords) == "data.frame") {
+    event_coords <- as.matrix(event_coords)
   }
-  colnames(node_coords) <- c("xcoord","ycoord")
-  colnames(events_mtx) <- c("xcoord","ycoord")
-  
+  colnames(node_coords) <- c("xcoord", "ycoord")
+  colnames(event_coords) <- c("xcoord", "ycoord")
+
   node_coords_obj <- list(node_coords = node_coords)
   class(node_coords_obj) <- "netTools"
   dist_mtx <- CalculateDistancesMtx(node_coords_obj)
-  
-  net_setup <- list(adjacency_mtx = adjacency_mtx, 
-                    node_coords = node_coords, 
-                    distances_mtx = dist_mtx, 
-                    graph_type = graph_type)
+
+  net_setup <- list(
+    adjacency_mtx = adjacency_mtx,
+    node_coords = node_coords,
+    distances_mtx = dist_mtx,
+    graph_type = graph_type
+  )
   class(net_setup) <- "netTools"
   g <- InitGraph(net_setup)
-  
-  intnet <- list(graph = g, events = events_mtx, graph_type = graph_type, distances_mtx = dist_mtx)
-  attr(intnet, 'class') <- "intensitynet"
-  
+
+  intnet <- list(graph = g, events = event_coords, graph_type = graph_type, distances_mtx = dist_mtx)
+  attr(intnet, "class") <- "intensitynet"
   # Select the proper class
   switch(graph_type, 
          'undirected' = {attr(intnet, 'class') <- c(class(intnet), "intensitynetUnd")},
@@ -80,14 +82,17 @@ plot <- function(obj, vertex_intensity='none', edge_intensity='none', xy_axes=TR
   UseMethod("plot")
 }
 
-gplot <- function(obj, heatmap='none', ...){
+gplot <- function(obj, heattype='none', ...){
   UseMethod("gplot")
 }
 
-plot_neighborhood <- function(obj, node_id, ...){
-  UseMethod("plot_neighborhood")
+PlotNeighborhood <- function(obj, node_id, ...){
+  UseMethod("PlotNeighborhood")
 }
 
+ApplyWindow <- function(obj, x_coords, y_coords){
+  UseMethod("ApplyWindow")
+}
 
 # -------- Intensity functions ----------
 PathIntensity <- function(obj, path_nodes){
@@ -110,6 +115,10 @@ EdgeIntensity <- function(obj, node_id1, node_id2, z){
   UseMethod("EdgeIntensity")
 }
 
+AllEdgeIntensities <- function(obj, z){
+  UseMethod("AllEdgeIntensities")
+}
+
 SetNetworkAttribute <- function(obj, where, name, value){
   UseMethod("SetNetworkAttribute")
 }
@@ -121,11 +130,12 @@ SetNetworkAttribute <- function(obj, where, name, value){
 #' 
 #' @param node_id1 First node ID of the edge
 #' @param node_id2 Second node ID of the edge
+#' @param z Maximum distance between the event and the edge to consider the event part of the edge.
 #' 
 #' @return edge_intensity - Intensity of the edge
 #'
 #TODO: Set function as non-visible
-EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
+EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
   if(node_id1 == node_id2){
     stop("The two vertices cannot be the same.")
   }
@@ -137,7 +147,7 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
   
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
-  events_mtx <- obj$events
+  event_coords <- obj$events
   
   # Note that the igraph library already handle the error when one of the node id's 
   # are not part of the graph. Also gives the proper information about it.
@@ -171,8 +181,8 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
   
   indicator <- 0
   # Counting events
-  for(row in 1:nrow(events_mtx)) {
-    ep <- c(events_mtx[row, 1], events_mtx[row, 2])
+  for(row in 1:nrow(event_coords)) {
+    ep <- c(event_coords[row, 1], event_coords[row, 2])
     dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
     class(dist_obj) <- 'netTools'
     d <- PointToSegment(dist_obj)
@@ -187,7 +197,81 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z=5){
   
   edge_intensity
 }
-#CalculateEventIntensities(intnet_und)
+
+#' Calculate all the edge intensities of the graph. It's more accurate than using iteratively the 
+#' function EdgeIntensity for all edges.
+#' 
+#' @name AllEdgeIntensities.intensitynet
+#' 
+#' @param z Maximum distance between the event and the edge to consider the event part of the edge.
+#' 
+#' @return intensitynet object where the graph contains all the edge intensities as an attribute
+#' 
+AllEdgeIntensities.intensitynet <- function(obj, z = 5){
+  if(z <= 0){
+    print("Warning: 'z' cannot be equal or less than 0, using default.")
+    z <- 5
+  }
+  
+  g <- obj$graph
+  distances_mtx <- obj$distances_mtx
+  event_coords <- obj$events
+  edge_list <- get.edgelist(g)
+  
+  edge_events <-  as.numeric(gsub("V", "", edge_list[,1]))
+  edge_events <- cbind(edge_events, as.numeric(gsub("V", "", edge_list[,2])))
+  edge_events <- cbind(edge_events, 0)
+  edge_events <- cbind(edge_events, 0)
+  colnames(edge_events) <- c('from', 'to', 'n_events', 'intensity')
+
+  node_coords <- matrix(1:length(V(g)))
+  node_coords <- cbind(node_coords, vertex_attr(g, "xcoord"))
+  node_coords <- cbind(node_coords, vertex_attr(g, "ycoord"))
+  colnames(node_coords) <- c('node', 'xcoord', 'ycoord')
+  
+  start_time <- Sys.time() # debug only
+  pb = txtProgressBar(min = 0, max = nrow(event_coords), initial = 0) 
+  cat("Calculating edge intensities...\n")
+  
+  for(row in 1:nrow(event_coords)){
+    setTxtProgressBar(pb, row)
+    tmp_edge <- NULL
+    shortest_d <- NULL
+    for(edgeID in 1:length(E(g))){
+      node1 <- node_coords[edge_events[edgeID, 'from'],][2:3]
+      node2 <- node_coords[edge_events[edgeID, 'to'],][2:3]
+
+      ep <- event_coords[row, ]
+      dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
+      class(dist_obj) <- 'netTools'
+      d <- PointToSegment(dist_obj)
+
+      # If the event is at a distance less or equal 'z' from the edge (segment)
+      # connecting both given points (the road), then is counted as an event of that road
+      if(d <= z){
+        if(d == 0){
+          tmp_edge <- edgeID
+          break
+        }
+        if (is.null(shortest_d) || d < shortest_d){
+          tmp_edge <- edgeID
+        }
+      }
+    }
+    if (!is.null(tmp_edge)){
+      edge_events[tmp_edge, 'n_events'] <- edge_events[tmp_edge, 'n_events'] + 1
+    }
+  }
+  close(pb)
+  cat(paste0("Time: ", Sys.time() - start_time, "\n")) # debug only
+  
+  for (edgeID in 1:length(E(g))) {
+    # Distance between the node and its neighbor
+    edge_dist <- abs(distances_mtx[edge_events[edgeID, 'from'], edge_events[edgeID, 'to']])
+    edge_events[edgeID, 'intensity'] <-  edge_events[edgeID, 'n_events']/edge_dist
+  }
+  SetNetworkAttribute(obj = obj, where = 'edge', name = 'intensity', value = as.matrix(edge_events[, 'intensity']))
+}
 
 #' Calculates the intensity of the given path
 #'
@@ -235,7 +319,7 @@ ShortestPathIntensity.intensitynet <- function(obj,  node_id1, node_id2, weighte
   g <- obj$graph
   
   if(weighted){
-    path <- ShortestDistance(node_id1, node_id2)$path
+    path <- ShortestNodeDistance(node_id1, node_id2)$path
   }else{
     path <- unlist(get.shortest.paths(g, node_id1, node_id2)$vpath)
   }
@@ -245,7 +329,7 @@ ShortestPathIntensity.intensitynet <- function(obj,  node_id1, node_id2, weighte
 
 
 #' Gives general node correlation of the network (choosing from: normal correlation, covariance, 
-#' moran-i or geary-g)
+#' moran-i or geary)
 #' 
 #' @name NodeGeneralCorrelation.intensitynet
 #'
@@ -264,12 +348,12 @@ NodeGeneralCorrelation.intensitynet <- function(obj, dep_type, lag_max, intensit
 }
 
 
-#' Gives node local moran-i or geary-g correlations
+#' Gives node local moran-i or geary correlations
 #' 
 #' @name NodeLocalCorrelation.intensitynet
 #'
 #' @param obj intensitynet object
-#' @param dep_type the type of dependence statistic to be computed ('moran_i' or 'geary_g'),
+#' @param dep_type the type of dependence statistic to be computed ('moran_i' or 'geary'),
 #' default = 'moran_i.
 #' @param intensity vector containing the intensity values that the heatmaps
 #' 
@@ -281,10 +365,10 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
   adj_listw <- mat2listw(adj_mtx)
   nb <- adj_listw$neighbours
   
-  if(dep_type=='geary_g'){
+  if(dep_type=='geary'){
     b_listw <- nb2listw(nb, style="B", zero.policy=TRUE) 
     locg <- localG(x = intensity, listw = b_listw)
-    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "geary_g", value = locg)
+    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "geary", value = locg)
     return(list(correlation = locg, intnet = intnet))
   } else{
     w_listw <- nb2listw(nb, style="W", zero.policy=TRUE) 
@@ -295,24 +379,26 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
 }
 
 
-#' Plot the network and if specified, the moran_i or geary_g heatmap.
+#' Plot the network and if specified, the moran_i or geary heatmap.
 #'
 #' @name gplot.intensitynet
 #'
 #' @param obj intensitynet object
-#' @param intensity vector containing the intensity values that the heatmaps
-#' will use. Default value = NULL
-#' @param heatmap local 'moran_i' or 'geary_g'
+#' @param intensity vector containing the intensity values which the heatmaps
+#' will use. Default value = NULL.
+#' @param heattype local 'moran_i' or 'geary'. If the intensity parameter is NULL,
+#' the function will use, if exist, the intensity (undirected) or intensity_in (directed) 
+#' values from the network nodes.
 #' @param ... extra arguments for the class gplot
 #' 
-gplot.intensitynet  <- function(obj, intensity = NULL, heatmap='none', ...){
+gplot.intensitynet  <- function(obj, intensity = NULL, heattype='none', ...){
   g <- obj$graph
   adj_mtx <- as_adj(graph = g)
   adj_listw <- mat2listw(adj_mtx)
   nb <- adj_listw$neighbours
   
-  if(heatmap != 'none' && heatmap != 'moran_i' && heatmap != 'geary_g'){
-    warning('Parameter "heatmap"should be "moran_i", "geary_g" or "none". Using default ("none").')
+  if(heattype != 'none' && heattype != 'moran_i' && heattype != 'geary' && heattype != 'intensity'){
+    warning('Parameter "heattype" should be "moran_i", "geary", "intensity" or "none". Using default ("none").')
   }
   
   if(is.null(intensity)){
@@ -320,11 +406,13 @@ gplot.intensitynet  <- function(obj, intensity = NULL, heatmap='none', ...){
   }
   
   node_coords <- data.frame(xcoord = vertex_attr(g)$xcoord, ycoord = vertex_attr(g)$ycoord)
-  rownames(node_coords) <- sprintf("V%s",seq(1:nrow(node_coords)))
+  #rownames(node_coords) <- sprintf("V%s",seq(1:nrow(node_coords)))
+  rownames(node_coords) <- vertex_attr(g)$name
   
-  if(heatmap == 'moran_i'){
+  if(heattype == 'moran_i'){
     w_listw <- nb2listw(nb, style="W", zero.policy=TRUE) 
-    locmoran <- localmoran(x = intensity, listw = w_listw, zero.policy=TRUE, na.action = na.omit)
+    #locmoran <- localmoran(x = intensity, listw = w_listw, zero.policy=TRUE, na.action = na.omit)
+    locmoran <- localmoran_perm(x = intensity, listw = w_listw, zero.policy=TRUE, na.action = na.omit, nsim=999)
     
     # Calculate deviations
     node_int_deviation <- intensity - mean(intensity)  
@@ -332,49 +420,68 @@ gplot.intensitynet  <- function(obj, intensity = NULL, heatmap='none', ...){
     
     # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
     quad_sig <- NA
-    significance <- 0.5
+    significance <- 0.05
     
     # non-significant observations
-    quad_sig[(locmoran[, 5] > significance)] <- 0 # "insignificant"  
+    quad_sig[(locmoran[, 5] > significance)] <- 1 # "insignificant"  
     # low-low quadrant
-    quad_sig[(node_int_deviation < 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 1 # "low-low"
+    quad_sig[(node_int_deviation < 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 2 # "low-low"
     # low-high quadrant
-    quad_sig[(node_int_deviation < 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 2 # "low-high"
+    quad_sig[(node_int_deviation < 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 3 # "low-high"
     # high-low quadrant
-    quad_sig[(node_int_deviation > 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 3 # "high-low"
+    quad_sig[(node_int_deviation > 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 4 # "high-low"
     # high-high quadrant
-    quad_sig[(node_int_deviation > 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 4 # "high-high"
+    quad_sig[(node_int_deviation > 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 5 # "high-high"
     
     
     data_df <- data.frame(intensity = intensity , 
                           xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
-                          heatmap = quad_sig)
-  }else if(heatmap=='geary_g'){
+                          heattype = quad_sig)
+    
+  }else if(heattype == 'geary'){
+    # https://sci-hub.se/https://doi.org/10.1111/gean.12164 # Page 6
+    
     b_listw <- nb2listw(nb, style="B", zero.policy=TRUE) 
     # local net G
     locg_all <- localG(x = intensity, listw = b_listw)
     locg <- unlist(as.list(round(locg_all, 1)))
     
+    # p_labels <- c("Not significant", "p <= 0.05", "p <= 0.01", "p <= 0.001")
+    # p_colors <- c("#eeeeee", "#84f576", "#53c53c", "#348124")
+    
+    # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
+    quad_sig <- NA
+
+    quad_sig[locg < 1] <- 1 # positive spatial autocorrelation
+    quad_sig[locg == 1] <- 2 # no spatial autocorrelation
+    quad_sig[locg > 1] <- 3 # negative spatial autocorrelation
+    
     data_df <- data.frame(intensity = intensity, 
                           xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
-                          heatmap = locg)
+                          heattype = quad_sig)
     
+  }else if(heattype == 'intensity'){
+    norm_int <- (intensity - min(intensity)) / (max(intensity) - min(intensity))
+    data_df <- data.frame(intensity = intensity, 
+                          xcoord = node_coords$xcoord, 
+                          ycoord = node_coords$ycoord, 
+                          heattype = norm_int)
   }else{
     data_df <- data.frame(intensity = intensity, 
                           xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
-                          heatmap = NA)
+                          heattype = NA)
   }
-  geoplot_obj <- list(graph=g, data_df = data_df, mode=heatmap)
+  geoplot_obj <- list(graph=g, data_df = data_df, mode=heattype)
   class(geoplot_obj) <- "netTools"
   
   GeoreferencedGgplot2(geoplot_obj, ...)
 }
 
 
-plot_neighborhood.intensitynet<- function(obj, node_id, ...){
+PlotNeighborhood.intensitynet<- function(obj, node_id, ...){
   g <- obj$graph
   events <- obj$events
   w_margin <- 50
@@ -389,16 +496,16 @@ plot_neighborhood.intensitynet<- function(obj, node_id, ...){
   window_coords <- list(min_x = min(v_coords[, 'xcoord']), min_y = min(v_coords[, 'ycoord']),
                         max_x = max(v_coords[, 'xcoord']), max_y = max(v_coords[, 'ycoord']))
   
-  event_coords <- NULL
+  e_coords <- NULL
   for(row in 1:nrow(events)){
     if(events[row, 1] >= window_coords$min_x - w_margin & 
        events[row, 1] <= window_coords$max_x + w_margin & 
        events[row, 2] >= window_coords$min_y - w_margin & 
        events[row, 2] <= window_coords$max_y + w_margin){
-      event_coords <- rbind(event_coords, events[row,])
+      e_coords <- rbind(event_coords, events[row,])
     }
   }
-  colnames(event_coords) <- c('xcoord', 'ycoord')
+  colnames(e_coords) <- c('xcoord', 'ycoord')
   
   # Plot vertices
   plot(v_coords, xlim = c(window_coords$min_x - w_margin , window_coords$max_x + w_margin), 
@@ -413,7 +520,7 @@ plot_neighborhood.intensitynet<- function(obj, node_id, ...){
   }
   
   # Plot events
-  points(x = event_coords[,'xcoord'], y = event_coords[,'ycoord'], col = 'red')
+  points(x = e_coords[,'xcoord'], y = e_coords[,'ycoord'], col = 'red')
 }
 
 
@@ -436,5 +543,57 @@ SetNetworkAttribute.intensitynet <- function(obj, where, name, value){
   
   intnet <- list(graph = g, events = obj$events, graph_type = obj$graph_type, distances_mtx = obj$distances_mtx)
   attr(intnet, 'class') <- class(obj)
+  intnet
+}
+
+
+#' Get the intensitynet object delimited by the given window
+#' 
+#' @param obj intensitynet object
+#' @param x_coords vector containing the x coordinate limits of the window
+#' @param x_coords vector containing the y coordinate limits of the window
+#' 
+#' @return intensitynet object delimited by the window (sub-part of the original)
+#' 
+ApplyWindow.intensitynet <- function(obj, x_coords, y_coords){
+  g <- obj$graph
+  events <- obj$events
+  nodes <- V(g)
+  
+  window_coords <- list(min_x = min(x_coords), min_y = min(y_coords),
+                        max_x = max(x_coords), max_y = max(y_coords))
+  
+  sub_v_coords <- c()
+  for(row in 1:length(nodes)){
+    v <- V(g)[row]
+    vertex_info <- vertex_attr(graph = g, index = v)
+    if(vertex_info$xcoord >= window_coords$min_x & 
+       vertex_info$xcoord <= window_coords$max_x & 
+       vertex_info$ycoord >= window_coords$min_y & 
+       vertex_info$ycoord <= window_coords$max_y){
+      sub_v_coords <- c(sub_v_coords, v)
+    }
+  }
+    
+  sub_e_coords <- NULL
+  for(row in 1:nrow(events)){
+    if(events[row, 1] >= window_coords$min_x & 
+       events[row, 1] <= window_coords$max_x & 
+       events[row, 2] >= window_coords$min_y & 
+       events[row, 2] <= window_coords$max_y){
+      sub_e_coords <- rbind(sub_e_coords, events[row,])
+    }
+  }
+  colnames(sub_e_coords) <- c('xcoord', 'ycoord')
+  
+  sub_g <- induced_subgraph(graph = g, vids = sub_v_coords)
+  
+  node_coords_obj <- list(node_coords = cbind(vertex_attr(sub_g, 'xcoord'), vertex_attr(sub_g, 'ycoord')))
+  class(node_coords_obj) <- "netTools"
+  sub_dist_mtx <- CalculateDistancesMtx(node_coords_obj)
+  
+  intnet <- list(graph = sub_g, events = sub_e_coords, graph_type = obj$graph_type, distances_mtx = sub_dist_mtx)
+  attr(intnet, 'class') <- class(obj)
+  
   intnet
 }

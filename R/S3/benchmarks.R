@@ -51,7 +51,7 @@ dist_mtx_test <- intnet$distances
 # SHORTEST DISTANCE
 short_dist_obj <- list(graph=intnet$graph, node_id1 = 'V601', node_id2 = 'V701', distances_mtx = intnet$distances)
 class(short_dist_obj) <- "netTools"
-short_dist <- ShortestDistance(short_dist_obj)
+short_dist <- ShortestNodeDistance(short_dist_obj)
 
 # GEORREFERENCED PLOT
 plot(intnet)
@@ -95,7 +95,7 @@ if(intnet_all$graph_type == 'undirected'){
   moran_i <- data_moran$correlation
   intnet_all <- data_moran$intnet
   
-  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary_g', intensity = vertex_attr(g)$intensity)
+  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = vertex_attr(g)$intensity)
   geary <- data_geary$correlation
   intnet_all <- data_geary$intnet
   
@@ -112,11 +112,11 @@ if(intnet_all$graph_type == 'undirected'){
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_moran_gplot.pdf")
-  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heatmap = 'moran_i')
+  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heattype = 'moran_i')
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_g_gplot.pdf")
-  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heatmap = 'geary_g')
+  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heattype = 'geary')
   dev.off()
   
   for(node_id in V(g)){
@@ -147,7 +147,7 @@ if(intnet_all$graph_type == 'undirected'){
   moran_i <- data_moran$correlation
   intnet_all <- data_moran$intnet
   
-  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary_g', intensity = vertex_attr(g)$intensity_in)
+  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = vertex_attr(g)$intensity_in)
   geary <- data_geary$correlation
   intnet_all <- data_geary$intnet
 }
@@ -173,5 +173,5 @@ dev.off()
 plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
 
 gplot(intnet_all)
-gplot(intnet_all, heatmap = 'moran_i')
-gplot(intnet_all, heatmap = 'geary_g')
+gplot(intnet_all, heattype = 'moran_i')
+gplot(intnet_all, heattype = 'geary')
