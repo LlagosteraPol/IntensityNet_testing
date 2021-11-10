@@ -577,13 +577,14 @@ dist_mtx <- CalculateDistancesMtx(node_coords_obj)
 
 intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                node_coords = chicago_node_coords, 
-                               events_mtx = assault_coordinates)
+                               event_coords = assault_coordinates)
 intnet_chicago <- CalculateEventIntensities(intnet_chicago)
 chicago_g <- intnet_chicago$graph
-gplot(intnet_chicago, heattype='moran_i')
+PlotHeatmap(intnet_chicago, heattype='moran_i')
+PlotHeatmap(intnet_chicago, heattype='geary')
+PlotHeatmap(intnet_chicago, heattype='intensity')
 
-
-
+#--------------------------------------Plot Chicago events-------------------------------------------
 chicago_edge_coords <- data.frame(xcoord1 = chicago[["domain"]][["lines"]][["ends"]][["x0"]],
                                   ycoord1 = chicago[["domain"]][["lines"]][["ends"]][["y0"]],
                                   xcoord2 = chicago[["domain"]][["lines"]][["ends"]][["x1"]],

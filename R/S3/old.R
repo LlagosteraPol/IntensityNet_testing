@@ -390,3 +390,80 @@ CalculateEventIntensities.intensitynetUnd = function(obj){
   attr(intnet, 'class') <- c("intensitynet", "intensitynetUnd")
   return(intnet)
 }
+
+
+AllEdgeIntensities.intensitynet <- function(obj, z = 5){
+  if(z <= 0){
+    print("Warning: 'z' cannot be equal or less than 0, using default.")
+    z <- 5
+  }
+  g <- obj$graph
+  distances_mtx <- obj$distances_mtx
+  event_coords <- obj$events
+  edge_list <- get.edgelist(g)
+  
+  if(length(event_coords) == 0){
+    return(NA)
+  }
+  
+  edge_events <- as.numeric(gsub("V", "", edge_list[,1]))
+  edge_events <- cbind(edge_events, as.numeric(gsub("V", "", edge_list[,2])))
+  edge_events <- cbind(edge_events, 0)
+  edge_events <- cbind(edge_events, 0)
+  colnames(edge_events) <- c('from', 'to', 'n_events', 'intensity')
+  
+  node_coords <- as.numeric((gsub("V", "", as_ids(V(g)))))
+  node_coords <- cbind(node_coords, vertex_attr(g, "xcoord"))
+  node_coords <- cbind(node_coords, vertex_attr(g, "ycoord"))
+  colnames(node_coords) <- c('node', 'xcoord', 'ycoord')
+  
+  start_time <- Sys.time() # debug only
+  pb = txtProgressBar(min = 0, max = nrow(event_coords), initial = 0) 
+  cat("Calculating edge intensities...\n")
+  
+  for(row in 1:nrow(event_coords)){
+    setTxtProgressBar(pb, row)
+    tmp_edge <- NULL
+    shortest_d <- NULL
+    for(edge_row in 1:nrow(edge_events)){
+      # node1 <- node_coords[node_coords[,'node'] == edge_events[edge_row, 'from'],][2:3]
+      # node2 <- node_coords[node_coords[,'node'] == edge_events[edge_row, 'to'],][2:3]
+      
+      # Faster but only works if the node ID is the same as its index
+      node1 <- node_coords[edge_events[edge_row, 'from'],][2:3]
+      node2 <- node_coords[edge_events[edge_row, 'to'],][2:3]
+      
+      ep <- event_coords[row, ]
+      dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
+      class(dist_obj) <- 'netTools'
+      d <- PointToSegment(dist_obj)
+      
+      # If the event is at a distance less or equal 'z' from the edge (segment)
+      # connecting both given points (the road), then is counted as an event of that road
+      if(d <= z){
+        if(d == 0){
+          tmp_edge <- edge_row
+          break
+        }
+        if (is.null(shortest_d) || d < shortest_d){
+          tmp_edge <- edge_row
+        }
+      }
+    }
+    if (!is.null(tmp_edge)){
+      edge_events[tmp_edge, 'n_events'] <- edge_events[tmp_edge, 'n_events'] + 1
+    }
+  }
+  close(pb)
+  cat(paste0("Time: ", Sys.time() - start_time, "\n")) # debug only
+  
+  for (edge_row in 1:nrow(edge_events)) {
+    # Distance between the node and its neighbor
+    edge_dist <- abs(distances_mtx[edge_events[edge_row, 'from'], edge_events[edge_row, 'to']])
+    edge_events[edge_row, 'intensity'] <-  edge_events[edge_row, 'n_events'] / edge_dist
+  }
+  SetNetworkAttribute(obj = obj, 
+                      where = 'edge', 
+                      name = 'intensity', 
+                      value = as.matrix(edge_events[, 'intensity']))
+}

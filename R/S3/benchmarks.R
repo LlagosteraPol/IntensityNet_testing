@@ -175,3 +175,12 @@ plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red'
 gplot(intnet_all)
 gplot(intnet_all, heattype = 'moran_i')
 gplot(intnet_all, heattype = 'geary')
+
+#-------------------------------------------SUB-NETWORK--------------------------------------------
+intnet_und <- intensitynet(castellon, nodes, crimes)
+intnet_und <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_coords = c(4429500, 4431500))
+intnet_und <- CalculateEventIntensities(intnet_und)
+
+PlotHeatmap(intnet_und)
+PlotHeatmap(intnet_und, heattype = 'moran_i')
+

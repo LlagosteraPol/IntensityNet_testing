@@ -219,34 +219,34 @@ GeoreferencedPlot.netTools = function(obj, vertex_intensity='', edge_intensity='
     x_dist <- max_x - min_x
     y_dist <- max_y - min_y
 
-    plot(g, 
-           layout=node_coords, 
+    plot(g,
+           layout = node_coords, 
            vertex.label = vertex_intensity, 
            vertex.label.cex = if(exists('vertex.label.cex', where=arguments)) arguments[['vertex.label.cex']] else 0.3,  
-           vertex.size= if(exists('vertex.size', where=arguments)) arguments[['vertex.size']] else 2, 
+           vertex.size = if(exists('vertex.size', where=arguments)) arguments[['vertex.size']] else 2, 
            edge.label = edge_intensity, 
            edge.label.cex = if(exists('edge.label.cex', where=arguments)) arguments[['edge.label.cex']] else 0.3,
            edge.arrow.size = if(exists('edge.arrow.size', where=arguments)) arguments[['edge.arrow.size']] else 0.1,
            ...)
     
     # Square encapsulating the plot
-    rect(-1.05,-1.05,1.05,1.05)
+    rect(-1.05, -1.05, 1.05, 1.05)
     
     # X and Y coordinates
     if(xy_axes){
-      mtext(expression(bold("x-coordinate")), at=0, line = -28, cex=0.70)
-      mtext(floor(min_x + (1 * (x_dist/6))), at=-0.67, line = -27, cex=0.70)
-      mtext(floor(min_x + (2 * (x_dist/6))), at=-0.34, line = -27, cex=0.70)
-      mtext(floor(min_x + (3 * (x_dist/6))), at=0, line = -27, cex=0.70)
-      mtext(floor(min_x + (4 * (x_dist/6))), at=0.34, line = -27, cex=0.70)
-      mtext(floor(min_x + (5 * (x_dist/6))), at=0.67, line = -27, cex=0.70)
+      mtext(expression(bold("x-coordinate")), at = 0, line = -28, cex = 0.70)
+      mtext(floor(min_x + (1 * (x_dist/6))), at = -0.67, line = -27, cex = 0.70)
+      mtext(floor(min_x + (2 * (x_dist/6))), at = -0.34, line = -27, cex = 0.70)
+      mtext(floor(min_x + (3 * (x_dist/6))), at = 0, line = -27, cex = 0.70)
+      mtext(floor(min_x + (4 * (x_dist/6))), at = 0.34, line = -27, cex = 0.70)
+      mtext(floor(min_x + (5 * (x_dist/6))), at = 0.67, line = -27, cex = 0.70)
       
-      mtext(expression(bold("y-coordinate")), at=0, line=0, cex=0.70, side = 2)
-      mtext(floor(min_y + (1 * (y_dist/6))), at=-0.67, line = -1, cex=0.70, side = 2)
-      mtext(floor(min_y + (2 * (y_dist/6))), at=-0.34, line = -1, cex=0.70, side = 2)
-      mtext(floor(min_y + (3 * (y_dist/6))), at=0, line = -1, cex=0.70, side = 2)
-      mtext(floor(min_y + (4 * (y_dist/6))), at=0.34, line = -1, cex=0.70, side = 2)
-      mtext(floor(min_y + (5 * (y_dist/6))), at=0.67, line = -1, cex=0.70, side = 2)
+      mtext(expression(bold("y-coordinate")), at = 0, line = 0, cex = 0.70, side = 2)
+      mtext(floor(min_y + (1 * (y_dist/6))), at = -0.67, line = -1, cex = 0.70, side = 2)
+      mtext(floor(min_y + (2 * (y_dist/6))), at = -0.34, line = -1, cex = 0.70, side = 2)
+      mtext(floor(min_y + (3 * (y_dist/6))), at = 0, line = -1, cex = 0.70, side = 2)
+      mtext(floor(min_y + (4 * (y_dist/6))), at = 0.34, line = -1, cex = 0.70, side = 2)
+      mtext(floor(min_y + (5 * (y_dist/6))), at = 0.67, line = -1, cex = 0.70, side = 2)
     }
     
     #grid (if specified)
@@ -282,6 +282,15 @@ GeoreferencedPlot.netTools = function(obj, vertex_intensity='', edge_intensity='
 }
 
 
+#' This function uses 'ggplot' to plot heatmaps of a network
+#' 
+#' @name GeoreferencedGgplot2.netTools
+#' 
+#' @param obj netTools object -> list(graph: igraph, data_df: dataframe(intensity: intensity of the nodes, 
+#' xcoord: x coordinates of the nodes, ycoord: y coordinates of the nodes, heattype: data wich the heatmap will refer), 
+#' mode: ('moran_i', 'getis' or 'intensity'))
+#' @param ... extra arguments for the ggplot
+#' 
 GeoreferencedGgplot2.netTools = function(obj, ...){
   arguments <- list(...)
   

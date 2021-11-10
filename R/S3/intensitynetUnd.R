@@ -48,8 +48,12 @@ MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
 #' 
 CalculateEventIntensities.intensitynetUnd = function(obj){
   g <- obj$graph
-  intensities <- obj$intensities
   counts <- c()
+  
+  if(length(obj$events) == 0){
+    warning("No events, cannot calculate any intensity.")
+    return()
+  }
   
   tmp_obj <- AllEdgeIntensities.intensitynet(obj)
   g <- tmp_obj$graph
