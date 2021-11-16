@@ -102,6 +102,9 @@ ApplyWindow <- function(obj, x_coords, y_coords){
 }
 
 
+ShortestNodeDistance <- function(obj, node_id1, node_id2){
+  UseMethod("ShortestNodeDistance")
+}
 # -------- Intensity functions ----------
 PathIntensity <- function(obj, path_nodes){
   UseMethod("PathIntensity")
@@ -429,7 +432,7 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
 #' values from the network nodes.
 #' @param ... extra arguments for the class ggplot
 #' @export
-PlotHeatmap.intensitynet  <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
+PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
   g <- obj$graph
   adj_mtx <- igraph::as_adj(graph = g)
   adj_listw <- spdep::mat2listw(adj_mtx)
@@ -550,7 +553,7 @@ PlotHeatmap.intensitynet  <- function(obj, heattype = 'none', intensity_type = '
 #' @param node_id Id of the node which the plot will be focused
 #' @param ... Extra arguments for plotting
 #' @export
-PlotNeighborhood.intensitynet<- function(obj, node_id, ...){
+PlotNeighborhood.intensitynet <- function(obj, node_id, ...){
   g <- obj$graph
   events <- obj$events
   w_margin <- 50
@@ -683,4 +686,29 @@ ApplyWindow.intensitynet <- function(obj, x_coords, y_coords){
   attr(intnet, 'class') <- class(obj)
   
   intnet
+}
+
+
+#' Calculates the shortest distance path between two nodes 
+#'
+#' @name ShortestNodeDistance.intensitynet
+#'
+#' @param obj intensitynet object
+#' @param node_id1 id of the starting node
+#' @param node_id2 id of the end node
+#' 
+#' @return distance of the path and the nodes of the path
+#' @export
+ShortestNodeDistance.intensitynet <- function(obj, node_id1, node_id2){
+  g <- obj$graph
+  distances_mtx <- obj$distances_mtx
+  
+  weighted_path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
+  if(!is.null(distances_mtx)){
+    weight_sum <- sum(igraph::E(g, path = unlist(weighted_path))$weight)
+  }
+  else{
+    weight_sum <- length(weighted_path)
+  }
+  list(weight = weight_sum, path = weighted_path)  
 }

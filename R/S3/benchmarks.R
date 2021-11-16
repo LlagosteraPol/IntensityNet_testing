@@ -49,9 +49,7 @@ class(intnet)
 dist_mtx_test <- intnet$distances
 
 # SHORTEST DISTANCE
-short_dist_obj <- list(graph=intnet$graph, node_id1 = 'V601', node_id2 = 'V701', distances_mtx = intnet$distances)
-class(short_dist_obj) <- "netTools"
-short_dist <- ShortestNodeDistance(short_dist_obj)
+short_dist <- ShortestNodeDistance(intnet, node_id1 = 'V601', node_id2 = 'V701')
 
 # GEORREFERENCED PLOT
 plot(intnet)
@@ -178,6 +176,9 @@ PlotHeatmap(intnet_all, heattype = 'geary')
 PlotHeatmap(intnet_all, heattype = 'v_intensity')
 PlotHeatmap(intnet_all, heattype = 'e_intensity')
 PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = igraph::V(g)[1:100])
+
+short_dist <- ShortestNodeDistance(intnet, node_id1 = 'V1', node_id2 = 'V1501')
+PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = short_dist$path)
 
 #-------------------------------------------SUB-NETWORK--------------------------------------------
 intnet_und <- intensitynet(castellon, nodes, crimes)

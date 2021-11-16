@@ -25,11 +25,6 @@ SetNodeIntensity <- function(obj){
 }
 
 
-ShortestNodeDistance <- function(obj){
-  UseMethod("ShortestNodeDistance")
-}
-
-
 GeoreferencedPlot <- function(obj, node_label='none', edge_label='none', ...){
   UseMethod("GeoreferencedPlot")
 }
@@ -123,7 +118,7 @@ CalculateDistancesMtx.netTools <- function(obj){
 #' 
 #' @return igraph network with the given coordinates as the attributes of the nodes
 #' 
-SetNetCoords.netTools = function(obj){
+SetNetCoords.netTools <- function(obj){
   g <- obj$graph
   x_coord_node <- obj$node_coords[, 1]
   y_coord_node <- obj$node_coords[, 2]
@@ -165,7 +160,7 @@ SetEdgeIntensity.netTools <- function(obj){
 #' @param obj netTools object -> list(graph: igraph, node_id: node id, intensity: node intensity)
 #' 
 #' @return igraph network with the given intensities as an attributes of the nodes
-SetNodeIntensity.netTools = function(obj){
+SetNodeIntensity.netTools <- function(obj){
   g <- obj$graph
   node_id <- obj$node_id
   intensity <- obj$intensity
@@ -176,38 +171,13 @@ SetNodeIntensity.netTools = function(obj){
 }
 
 
-#' Calculates the shortest distance path between two nodes 
-#'
-#' @name ShortestNodeDistance.netTools 
-#'
-#' @param obj netTools object -> list(graph: igraph, node_id1: node id, node_id2: node id, distances_mtx: distances matrix))
-#' 
-#' @return distance of the path and the nodes of the path
-#' 
-ShortestNodeDistance.netTools = function(obj){
-  g <- obj$graph
-  node_id1 <- obj$node_id1
-  node_id2 <- obj$node_id2
-  distances_mtx <- obj$distances_mtx
-  
-  weighted_path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
-  if(!is.null(distances_mtx)){
-    weight_sum <- sum(igraph::E(g, path = unlist(weighted_path))$weight)
-  }
-  else{
-    weight_sum <- length(weighted_path)
-  }
-  list(weight = weight_sum, path = weighted_path)  
-}
-
-
 #' Plot the given network using its node coordinates
 #'
 #' @name GeoreferencedPlot.netTools 
 #'
 #' @param obj netTools object -> list(graph: igraph, distances_mtx: distances matrix))
 #' 
-GeoreferencedPlot.netTools = function(obj, vertex_intensity='', edge_intensity='', xy_axes=TRUE, enable_grid=FALSE, ...){
+GeoreferencedPlot.netTools <- function(obj, vertex_intensity='', edge_intensity='', xy_axes=TRUE, enable_grid=FALSE, ...){
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
   arguments <- list(...)
@@ -295,7 +265,7 @@ GeoreferencedPlot.netTools = function(obj, vertex_intensity='', edge_intensity='
 #' mode: ('moran_i', 'getis' or 'intensity'))
 #' @param ... extra arguments for the ggplot
 #' 
-GeoreferencedGgplot2.netTools = function(obj, ...){
+GeoreferencedGgplot2.netTools <- function(obj, ...){
   arguments <- list(...)
   
   g <- obj$graph
