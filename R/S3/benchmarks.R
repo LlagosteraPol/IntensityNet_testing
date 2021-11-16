@@ -68,8 +68,8 @@ int_path <- PathIntensity(intnet, short_dist$path)
 # All intensities
 intnet_all <- CalculateEventIntensities(intnet)
 g <- intnet_all$graph
-edge_attr_names(g)
-vertex_attr_names(g)
+igraph::edge_attr_names(g)
+igraph::vertex_attr_names(g)
 
 if(intnet_all$graph_type == 'undirected'){
 
@@ -79,29 +79,29 @@ if(intnet_all$graph_type == 'undirected'){
   
   plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
   
-  vertex_attr(g, 'intensity', V(g)['V1']) 
+  igraph::vertex_attr(g, 'intensity', igraph::V(g)['V1']) 
   
-  for(node_id in V(g)){
-    if(V(g)[node_id]$intensity>0) cat(node_id,": ",V(g)[node_id]$intensity, "\n")
+  for(node_id in igraph::V(g)){
+    if(igraph::V(g)[node_id]$intensity>0) cat(node_id,": ", igraph::V(g)[node_id]$intensity, "\n")
   }
   
   gen_corr <- NodeGeneralCorrelation(intnet_all, dep_type = 'correlation', lag_max = 2, 
-                                         intensity = vertex_attr(g)$intensity)
+                                         intensity = igraph::vertex_attr(g)$intensity)
   
   gen_cov <- NodeGeneralCorrelation(intnet_all, dep_type = 'covariance', lag_max = 2, 
-                                         intensity = vertex_attr(g)$intensity)
+                                         intensity = igraph::vertex_attr(g)$intensity)
   
-  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = vertex_attr(g)$intensity)
+  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = igraph::vertex_attr(g)$intensity)
   moran_i <- data_moran$correlation
   intnet_all <- data_moran$intnet
   
-  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = vertex_attr(g)$intensity)
+  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = igraph::vertex_attr(g)$intensity)
   geary <- data_geary$correlation
   intnet_all <- data_geary$intnet
   
 } else{
-  vertex_attr(g, 'intensity_in', V(g)['V1']) 
-  vertex_attr(g, 'intensity_out', V(g)['V1']) 
+  igraph::vertex_attr(g, 'intensity_in', igraph::V(g)['V1']) 
+  igraph::vertex_attr(g, 'intensity_out', igraph::V(g)['V1']) 
   
   pdf("Plots/area_with_grid_Dir_plot.pdf")
   plot(intnet_all, enable_grid = TRUE, vertex_intensity = 'intensity_out')
@@ -112,31 +112,31 @@ if(intnet_all$graph_type == 'undirected'){
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_moran_gplot.pdf")
-  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heattype = 'moran_i')
+  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heattype = 'moran_i')
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_g_gplot.pdf")
-  gplot(intnet_all, intensity = vertex_attr(intnet_all$graph)$intensity_in, heattype = 'geary')
+  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heattype = 'geary')
   dev.off()
   
-  for(node_id in V(g)){
-    if(V(g)[node_id]$intensity_in>0) cat(node_id,": ",V(g)[node_id]$intensity_in, "\n")
+  for(node_id in igraph::V(g)){
+    if(igraph::V(g)[node_id]$intensity_in>0) cat(node_id,": ", igraph::V(g)[node_id]$intensity_in, "\n")
   }
   
-  for(node_id in V(g)){
-    if(V(g)[node_id]$intensity_out>0) cat(node_id,": ",V(g)[node_id]$intensity_out, "\n")
+  for(node_id in igraph::V(g)){
+    if(igraph::V(g)[node_id]$intensity_out>0) cat(node_id,": ", igraph::V(g)[node_id]$intensity_out, "\n")
   }
   
   if(intnet_all$graph_type == 'mixed'){
-    vertex_attr(g, 'intensity_und', V(g)['V1']) 
-    vertex_attr(g, 'intensity_all', V(g)['V1']) 
+    igraph::vertex_attr(g, 'intensity_und', igraph::V(g)['V1']) 
+    igraph::vertex_attr(g, 'intensity_all', igraph::V(g)['V1']) 
     
-    for(node_id in V(g)){
-      if(V(g)[node_id]$intensity_und>0) cat(node_id,": ",V(g)[node_id]$intensity_und, "\n")
+    for(node_id in igraph::V(g)){
+      if(igraph::V(g)[node_id]$intensity_und>0) cat(node_id,": ", igraph::V(g)[node_id]$intensity_und, "\n")
     }
     
-    for(node_id in V(g)){
-      if(V(g)[node_id]$intensity_all>0) cat(node_id,": ",V(g)[node_id]$intensity_all, "\n")
+    for(node_id in igraph::V(g)){
+      if(igraph::V(g)[node_id]$intensity_all>0) cat(node_id,": ", igraph::V(g)[node_id]$intensity_all, "\n")
     }
   }
   
@@ -152,8 +152,8 @@ if(intnet_all$graph_type == 'undirected'){
   intnet_all <- data_geary$intnet
 }
 
-for(edge_id in E(g)){
-  if(E(g)[edge_id]$intensity>0) print(E(g)[edge_id]$intensity)
+for(edge_id in igraph::E(g)){
+  if(igraph::E(g)[edge_id]$intensity>0) print(igraph::E(g)[edge_id]$intensity)
 }
 
 #-----------------------------INTENSITYNET CLASS: FUNCTION TESTING---------------------------------
@@ -172,15 +172,18 @@ dev.off()
 
 plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
 
-gplot(intnet_all)
-gplot(intnet_all, heattype = 'moran_i')
-gplot(intnet_all, heattype = 'geary')
+PlotHeatmap(intnet_all)
+PlotHeatmap(intnet_all, heattype = 'moran_i')
+PlotHeatmap(intnet_all, heattype = 'geary')
+PlotHeatmap(intnet_all, heattype = 'v_intensity')
+PlotHeatmap(intnet_all, heattype = 'e_intensity')
+PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = igraph::V(g)[1:100])
 
 #-------------------------------------------SUB-NETWORK--------------------------------------------
 intnet_und <- intensitynet(castellon, nodes, crimes)
-intnet_und <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_coords = c(4429500, 4431500))
-intnet_und <- CalculateEventIntensities(intnet_und)
+intnet_und_reduced <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_coords = c(4429500, 4431500))
+intnet_und_reduced <- CalculateEventIntensities(intnet_und_reduced)
 
-PlotHeatmap(intnet_und)
-PlotHeatmap(intnet_und, heattype = 'moran_i')
+PlotHeatmap(intnet_und_reduced)
+PlotHeatmap(intnet_und_reduced, heattype = 'v_intensity')
 
