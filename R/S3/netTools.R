@@ -327,27 +327,49 @@ GeoreferencedGgplot2.netTools <- function(obj, ...){
                                        face = "bold",
                                        hjust = 0.5) )
   }else if(mode == 'geary'){
-    ggplot2::ggplot(data_df, ggplot2::aes(xcoord, ycoord), ...) + 
-      ggplot2::geom_point( ggplot2::aes( colour = as.factor(value) ), 
-                  shape = 19, 
-                  size = 1.5 ) +
-      ggplot2::geom_tile( ggplot2::aes( fill = as.factor(value) ), 
-                 show.legend = FALSE ) + 
-      ggplot2::labs(title = 'Geary-c Heatmap\n') +
-      ggplot2::scale_color_manual(values = c("green", "gray", "red"), 
-                         name = "", 
-                         breaks = c(1,2,3,4), 
-                         labels = c("Not contemplated","positive auto.","no auto.","negative auto.") ) +
-      ggplot2::geom_segment(ggplot2::aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
-                   data = edges_df, 
-                   size = 0.5, 
-                   colour = "grey") +
-      ggplot2::scale_y_continuous( name = "y-coordinate" ) + 
-      ggplot2::scale_x_continuous( name = "x-coordinate" ) + 
+    # ggplot2::ggplot(data_df, ggplot2::aes(xcoord, ycoord), ...) + 
+    #   ggplot2::geom_point( ggplot2::aes( colour = as.factor(value) ), 
+    #               shape = 19, 
+    #               size = 1.5 ) +
+    #   ggplot2::geom_tile( ggplot2::aes( fill = as.factor(value) ), 
+    #              show.legend = FALSE ) + 
+    #   ggplot2::labs(title = 'Geary-c Heatmap\n') +
+    #   ggplot2::scale_color_manual(values = c("green", "gray", "red"), 
+    #                      name = "", 
+    #                      breaks = c(1,2,3,4), 
+    #                      labels = c("Not contemplated","positive auto.","no auto.","negative auto.") ) +
+    #   ggplot2::geom_segment(ggplot2::aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2), 
+    #                data = edges_df, 
+    #                size = 0.5, 
+    #                colour = "grey") +
+    #   ggplot2::scale_y_continuous( name = "y-coordinate" ) + 
+    #   ggplot2::scale_x_continuous( name = "x-coordinate" ) + 
+    #   ggplot2::theme_bw() +
+    #   ggplot2::theme( plot.title = ggplot2::element_text( size = 14, 
+    #                                     face = "bold", 
+    #                                     hjust = 0.5 ) )
+    ggplot2::ggplot(data_df, ggplot2::aes(xcoord, ycoord), ...) +
+      ggplot2::geom_point(shape = 19,
+                          size = 1.5,
+                          colour="gray") +
+      ggplot2::geom_point(data = highlighted_df,
+                          shape = 19,
+                          size = 1.5,
+                          ggplot2::aes(xcoord, ycoord, colour = value)) +
+      viridis::scale_color_viridis() +
+      ggplot2::labs(title = 'Geary-c Heatmap\n',
+                    color = 'Correlation') +
+      ggplot2::geom_segment(ggplot2::aes(x = xcoord1, y = ycoord1, xend = xcoord2, yend = ycoord2),
+                            data = edges_df,
+                            size = 0.5,
+                            colour="grey") +
+      ggplot2::scale_y_continuous(name = "y-coordinate") +
+      ggplot2::scale_x_continuous(name = "x-coordinate") +
       ggplot2::theme_bw() +
-      ggplot2::theme( plot.title = ggplot2::element_text( size = 14, 
-                                        face = "bold", 
-                                        hjust = 0.5 ) )
+      ggplot2::theme(legend.title = ggplot2::element_text(face = "bold"),
+                     plot.title = ggplot2::element_text( size = 14,
+                                                         face = "bold",
+                                                         hjust = 0.5) )
   }else if( mode == 'v_intensity' ){
     ggplot2::ggplot(data_df, ggplot2::aes(xcoord, ycoord), ...) +
       ggplot2::geom_point(shape = 19,

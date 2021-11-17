@@ -1,16 +1,12 @@
 
-# require(contoureR)
 # require(igraph)
 # require(intergraph)
-# require(intervals)
 # require(ggplot2)
-#require(ggraph)
 require(roxygen2)
 # require(sna)
 # require(spatstat)
 # require(spdep)
 # require(viridis)
-# require(visNetwork)
 
 source("./intensitynetDir.R", local = TRUE)
 source("./intensitynetMix.R", local = TRUE)
@@ -87,7 +83,7 @@ plot <- function(obj, vertex_intensity='none', edge_intensity='none', xy_axes=TR
 }
 
 
-PlotHeatmap <- function(obj, heattype='none', ...){
+PlotHeatmap <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
   UseMethod("PlotHeatmap")
 }
 
@@ -105,6 +101,8 @@ ApplyWindow <- function(obj, x_coords, y_coords){
 ShortestNodeDistance <- function(obj, node_id1, node_id2){
   UseMethod("ShortestNodeDistance")
 }
+
+
 # -------- Intensity functions ----------
 PathIntensity <- function(obj, path_nodes){
   UseMethod("PathIntensity")
@@ -138,6 +136,11 @@ AllEdgeIntensities <- function(obj, z){
 
 SetNetworkAttribute <- function(obj, where, name, value){
   UseMethod("SetNetworkAttribute")
+}
+
+
+LaplacianGearyRepresentation <- function(obj,  intensity_type = 'none'){
+  UseMethod("LaplacianGearyRepresentation")
 }
 
 
@@ -354,13 +357,13 @@ PathIntensity.intensitynet <- function(obj, path_nodes){
 #' @param node_id2 ending node
 #' @param weighted TRUE or FALSE (default), tell if the distances must be taken into account 
 #' 
-#' @return intensity of the path the shortest path and the path
+#' @return intensity of the shortest path and the path vertices
 #' @export
 ShortestPathIntensity.intensitynet <- function(obj,  node_id1, node_id2, weighted = FALSE){
   g <- obj$graph
   
   if(weighted){
-    path <- ShortestNodeDistance(node_id1, node_id2)$path
+    path <- ShortestNodeDistance(obj, node_id1, node_id2)$path
   }else{
     path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
   }
@@ -430,6 +433,10 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
 #' @param heattype local 'moran_i' or 'geary'. If the intensity parameter is NULL,
 #' the function will use, if exist, the intensity (undirected) or intensity_in (directed) 
 #' values from the network nodes.
+#' @param intensity_type name of the intenisty used to plot the heatmap. For undirected networks: 'intensity'. 
+#' For directed networks: 'intensity_in' or 'intensity_out'. For mixed networks: 'intensity_in', 'intensity_out', 
+#' 'intensity_und' or 'intensity_all'
+#' @param net_vertices chosen vertices to plot the heatmap (or it related edges in case to plot the edge heatmap)
 #' @param ... extra arguments for the class ggplot
 #' @export
 PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
@@ -455,8 +462,10 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
     }
     if(!is.null(igraph::vertex_attr(graph = g, name = 'intensity'))){
       intensity <- igraph::vertex_attr(graph = g, name = 'intensity')
+      intensity_type <- 'intensity'
     }else if(!is.null(igraph::vertex_attr(graph = g, name = 'intensity_in'))){
       intensity <- igraph::vertex_attr(graph = g, name = 'intensity_in')
+      intensity_type <- 'intensity_in'
     }else{
       intensity <- NA
     }
@@ -501,23 +510,23 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
                           value = quad_sig)
     
   }else if(heattype == 'geary'){
-    b_listw <- spdep::nb2listw(nb, style = "B", zero.policy = TRUE) 
-    # local net G
-    locg_all <- spdep::localG(x = intensity, listw = b_listw)
-    locg <- unlist(as.list(round(locg_all, 1)))
-    
-    # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
-    quad_sig <- NA
-
-    quad_sig[locg < 1] <- 2 # positive spatial autocorrelation
-    quad_sig[locg == 1] <- 3 # no spatial autocorrelation
-    quad_sig[locg > 1] <- 4 # negative spatial autocorrelation
+    # b_listw <- spdep::nb2listw(nb, style = "B", zero.policy = TRUE) 
+    # # local net G
+    # locg_all <- spdep::localG(x = intensity, listw = b_listw)
+    # locg <- unlist(as.list(round(locg_all, 1)))
+    # 
+    # # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
+    # quad_sig <- NA
+    # 
+    # quad_sig[locg < 1] <- 2 # positive spatial autocorrelation
+    # quad_sig[locg == 1] <- 3 # no spatial autocorrelation
+    # quad_sig[locg > 1] <- 4 # negative spatial autocorrelation
     
     #quad_sig[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
     
     data_df <- data.frame(xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
-                          value = quad_sig)
+                          value = diag(LaplacianGearyRepresentation(obj, intensity_type)))
     
   }else if(heattype == 'v_intensity'){
     norm_int <- (intensity - min(intensity)) / (max(intensity) - min(intensity))
@@ -528,11 +537,13 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
   }else if(heattype == 'e_intensity'){
     data_df <- data.frame(xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord)
+    
   }else if(heattype == 'intensity'){
     norm_int <- (intensity - min(intensity)) / (max(intensity) - min(intensity))
     data_df <- data.frame(xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
                           value = norm_int)
+    
   }else{
     data_df <- data.frame(xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
@@ -698,7 +709,7 @@ ApplyWindow.intensitynet <- function(obj, x_coords, y_coords){
 #' @param node_id2 id of the end node
 #' 
 #' @return distance of the path and the nodes of the path
-#' @export
+#'
 ShortestNodeDistance.intensitynet <- function(obj, node_id1, node_id2){
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
@@ -711,4 +722,41 @@ ShortestNodeDistance.intensitynet <- function(obj, node_id1, node_id2){
     weight_sum <- length(weighted_path)
   }
   list(weight = weight_sum, path = weighted_path)  
+}
+
+
+#' Get the laplacian geary matrix representation of the given network with the given intensity.
+#' For further details about the representation, refer to the paper: Yamada, H. Geary’s c and 
+#' Spectral Graph Theory. Mathematics 2021, 9, 2465. https://doi.org/10.3390/math9192465
+#' 
+#' @name LaplacianGearyRepresentation.intensitynet
+#' 
+#' @param obj intensitynet object
+#' @param intensity_type name of the intenisty used to plot the heatmap. For undirected networks: 'intensity'. 
+#' For directed networks: 'intensity_in' or 'intensity_out'. For mixed networks: 'intensity_in', 'intensity_out', 
+#' 'intensity_und' or 'intensity_all'
+#' 
+#' @return matrix
+#' 
+LaplacianGearyRepresentation.intensitynet <- function(obj, intensity_type){
+  g <- obj$graph
+  n_v <- igraph::gorder(g)
+  
+  l_mtx <- as.matrix(igraph::laplacian_matrix(g,  weights = NA)) # Unweighted Laplacian matrix
+  l_eigen <- eigen(l_mtx) # Eigenvalues and eigenvectors
+  y <- tcrossprod(l_eigen[["vectors"]],l_eigen[["vectors"]]) # y = U*U^T
+  
+  omega <- sum(igraph::vertex_attr(g, intensity_type)) # Sum of specified vertex weights
+  
+  id_mtx <- diag(n_v) # Identity matrix (In)
+  
+  ones <- as.matrix(rep(1, n_v), ncol = n_v)
+  ones_t_ones <- crossprod(ones, ones) 
+  
+  # Ql = In - l(l^T*l)^-1*l^T 
+  ql <- id_mtx - ones%*%solve(ones_t_ones)%*%t(ones)  # solve = inverse of a matrix (^-1)
+  
+  # c = ( (n-1) / omega) * ( (y^T*L*y) / (y^T*Q*y) )
+  c <- ( ( n_v - 1 ) / omega ) * ( (solve(y)%*%l_mtx%*%y) / (solve(y)%*%ql%*%y) )
+  c
 }
