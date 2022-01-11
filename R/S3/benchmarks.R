@@ -97,6 +97,10 @@ if(intnet_all$graph_type == 'undirected'){
   geary <- data_geary$correlation
   intnet_all <- data_geary$intnet
   
+  # data_getis <- NodeLocalCorrelation(intnet_all, dep_type = 'getis', intensity = igraph::vertex_attr(g)$intensity)
+  # getis <- data_getis$correlation
+  # intnet_all <- data_getis$intnet
+  
 } else{
   igraph::vertex_attr(g, 'intensity_in', igraph::V(g)['V1']) 
   igraph::vertex_attr(g, 'intensity_out', igraph::V(g)['V1']) 
@@ -139,13 +143,13 @@ if(intnet_all$graph_type == 'undirected'){
   }
   
   correlations <- NodeGeneralCorrelation(intnet_all, dep_type = 'correlation', lag_max = 2, 
-                                         intensity = vertex_attr(g)$intensity_in)
+                                         intensity = igraph::vertex_attr(g)$intensity_in)
   
-  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = vertex_attr(g)$intensity_in)
+  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = igraph::vertex_attr(g)$intensity_in)
   moran_i <- data_moran$correlation
   intnet_all <- data_moran$intnet
   
-  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = vertex_attr(g)$intensity_in)
+  data_geary <- NodeLocalCorrelation(intnet_all, dep_type = 'geary', intensity = igraph::vertex_attr(g)$intensity_in)
   geary <- data_geary$correlation
   intnet_all <- data_geary$intnet
 }

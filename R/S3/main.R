@@ -392,50 +392,82 @@ NodeGeneralCorrelation.intensitynet <- function(obj, dep_type, lag_max, intensit
 }
 
 
-#' Gives node local moran-i or geary correlations
+#' Gives node local moran-i or geary-c correlations
 #' 
 #' @name NodeLocalCorrelation.intensitynet
 #'
 #' @param obj intensitynet object
-#' @param dep_type the type of dependence statistic to be computed ('moran_i' or 'geary'),
-#' default = 'moran_i.
+#' @param dep_type 'moran_i', 'getis' or 'geary'. Type of local correlation to be computed (Moran-i, Getis-Gstar, Geary-c*),
+#' default = 'moran_i. * Details in paper: A Local Indicator of Multivariate SpatialAssociation: 
+#' Extending Geary’s c, from Luc Anselin
 #' @param intensity vector containing the intensity values that the heatmaps
 #' 
-#' @return An intnet object wich contains a igraph network with the selected correlation added
+#' @return An intnet object wich contains a igraph network with the selected correlation 
+#' added into the vertices attributes
 #' @export
 NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensity){
   g <- obj$graph
   adj_mtx <- igraph::as_adj(graph = g)
   adj_listw <- spdep::mat2listw(adj_mtx)
   nb <- adj_listw$neighbours
+  w_listw <- spdep::nb2listw(nb, style="W", zero.policy=TRUE) 
   
   if(dep_type == 'geary'){
-    b_listw <- spdep::nb2listw(nb, style="B", zero.policy=TRUE) 
-    locg <- spdep::localG(x = intensity, listw = b_listw)
-    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "geary", value = locg)
-    return(list(correlation = locg, intnet = intnet))
-  } else{
-    w_listw <- spdep::nb2listw(nb, style="W", zero.policy=TRUE) 
+    nb_b <- spdep::listw2mat(w_listw)
+    b <- as(nb_b, "CsparseMatrix")
+    all(b == Matrix::t(b))
+    
+    # scale, with default settings, will calculate the mean and standard deviation of the entire vector,
+    # then "scale" each element by those values by subtracting the mean and dividing by the sd
+    val <- scale(intensity)[,1]
+    
+    # Calculates local geary-c.
+    # Details in paper: A Local Indicator of Multivariate SpatialAssociation: Extending Geary’s c, from Luc Anselin
+    n <- length(intensity)
+    locgc <- numeric(n)
+    for (i in c(1:n)) {
+      locgc[i] <- sum(b[i,] * (val[i] - val)^2)
+    }
+    
+    #--------------------------------------Comprovation:---------------------------------------
+    # General Geary-c from local:
+    # general <- sum(locgc)/(2*sum(nb_b))
+    # 
+    # g_sna <- intergraph::asNetwork(g)
+    # general_ref <- sna::nacf(g_sna, intensity, type = 'geary', mode = "graph")[2]
+    #------------------------------------------------------------------------------------------
+    
+    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "geary", value = locgc)
+    return(list(correlation = locgc, intnet = intnet))
+    
+  } else if (dep_type == 'moran_i'){
     locmoran <- spdep::localmoran(x = intensity, listw = w_listw, zero.policy=TRUE)
     intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = 'moran_i', value = locmoran[, 'Ii'])
     return(list(correlation = locmoran, intnet = intnet))
-  } 
+    
+  } else if (dep_type == 'getis'){
+    b_listw <- spdep::nb2listw(nb, style="B", zero.policy=TRUE) 
+    locgg <- spdep::localG(x = intensity, listw = b_listw)
+    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "getis", value = locgg)
+    return(list(correlation = locgg, intnet = intnet))
+  }
 }
 
 
-#' Plot the network and if specified, the moran_i or geary heatmap.
+#' Plot the network and if specified, the correlation heatmap. Which could be:
 #'
 #' @name PlotHeatmap.intensitynet
 #'
 #' @param obj intensitynet object
 #' @param intensity vector containing the intensity values which the heatmaps
 #' will use. Default value = NULL.
-#' @param heattype local 'moran_i' or 'geary'. If the intensity parameter is NULL,
-#' the function will use, if exist, the intensity (undirected) or intensity_in (directed) 
-#' values from the network nodes.
+#' @param heattype moran_i': Local Moran-i correlation (with 999 permutations), 'geary': Local Geary-c* 
+#' correlation. The correlations will use the indicated intensity type.
+#' The function also allow to only plot the intensity heatmap 'v_intensity' for vertices or 'e_intensity' for edges.
 #' @param intensity_type name of the intenisty used to plot the heatmap. For undirected networks: 'intensity'. 
 #' For directed networks: 'intensity_in' or 'intensity_out'. For mixed networks: 'intensity_in', 'intensity_out', 
-#' 'intensity_und' or 'intensity_all'
+#' 'intensity_und' or 'intensity_all'. If the intensity parameter is NULL, the function will use, if exist, 
+#' the intensity (undirected) or intensity_in (directed) values from the network nodes.
 #' @param net_vertices chosen vertices to plot the heatmap (or it related edges in case to plot the edge heatmap)
 #' @param ... extra arguments for the class ggplot
 #' @export
@@ -444,6 +476,7 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
   adj_mtx <- igraph::as_adj(graph = g)
   adj_listw <- spdep::mat2listw(adj_mtx)
   nb <- adj_listw$neighbours
+  w_listw <- spdep::nb2listw(nb, style = "W",  zero.policy=TRUE)
   
   if(heattype != 'none' && heattype != 'moran_i' && heattype != 'geary' && 
      heattype != 'v_intensity' && heattype != 'e_intensity' && heattype != 'intensity'){
@@ -475,58 +508,92 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
                             ycoord = igraph::vertex_attr(graph = g, name = 'ycoord'))
   rownames(node_coords) <- igraph::vertex_attr(graph = g, name = 'name')
   
-  if(heattype == 'moran_i'){
-    w_listw <- spdep::nb2listw(nb, style="W", zero.policy=TRUE) 
-    #locmoran <- localmoran(x = intensity, listw = w_listw, zero.policy=TRUE, na.action = na.omit)
+  if(heattype == 'moran_i'){ # Local Moran-i
     locmoran <- spdep::localmoran_perm(x = intensity, 
                                        listw = w_listw, 
                                        zero.policy = TRUE, 
                                        na.action = na.omit, 
-                                       nsim = 999)
+                                       nsim = 999) # 999 permutations
     
     # Calculate deviations
     node_int_deviation <- intensity - mean(intensity)  
     locmoran_deviation <- locmoran[, 'Ii'] - mean(locmoran[, 'Ii'])
     
     # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
-    quad_sig <- NA
+    sig_dstr <- NA
     significance <- 0.05
     
     # non-significant observations
-    quad_sig[(locmoran[, 5] > significance)] <- 2 # "insignificant"  
+    sig_dstr[(locmoran[, 5] > significance)] <- 2 # "insignificant"  
     # low-low quadrant
-    quad_sig[(node_int_deviation < 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 3 # "low-low"
+    sig_dstr[(node_int_deviation < 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 3 # "low-low"
     # low-high quadrant
-    quad_sig[(node_int_deviation < 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 4 # "low-high"
+    sig_dstr[(node_int_deviation < 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 4 # "low-high"
     # high-low quadrant
-    quad_sig[(node_int_deviation > 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 5 # "high-low"
+    sig_dstr[(node_int_deviation > 0 & locmoran_deviation < 0) & (locmoran[, 5] <= significance)] <- 5 # "high-low"
     # high-high quadrant
-    quad_sig[(node_int_deviation > 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 6 # "high-high"
+    sig_dstr[(node_int_deviation > 0 & locmoran_deviation > 0) & (locmoran[, 5] <= significance)] <- 6 # "high-high"
     
-    quad_sig[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
-    
-    data_df <- data.frame(xcoord = node_coords$xcoord, 
-                          ycoord = node_coords$ycoord, 
-                          value = quad_sig)
-    
-  }else if(heattype == 'geary'){
-    # b_listw <- spdep::nb2listw(nb, style = "B", zero.policy = TRUE) 
-    # # local net G
-    # locg_all <- spdep::localG(x = intensity, listw = b_listw)
-    # locg <- unlist(as.list(round(locg_all, 1)))
-    # 
-    # # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
-    # quad_sig <- NA
-    # 
-    # quad_sig[locg < 1] <- 2 # positive spatial autocorrelation
-    # quad_sig[locg == 1] <- 3 # no spatial autocorrelation
-    # quad_sig[locg > 1] <- 4 # negative spatial autocorrelation
-    
-    #quad_sig[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
+    sig_dstr[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
     
     data_df <- data.frame(xcoord = node_coords$xcoord, 
                           ycoord = node_coords$ycoord, 
-                          value = diag(LaplacianGearyRepresentation(obj, intensity_type)))
+                          value = sig_dstr)
+    
+  }else if(heattype == 'geary'){  # Local Geary-c
+    nb_b <- spdep::listw2mat(w_listw)
+    
+    b <- as(nb_b, "CsparseMatrix")
+    all(b == Matrix::t(b))
+    
+    # scale, with default settings, will calculate the mean and standard deviation of the entire vector,
+    # then "scale" each element by those values by subtracting the mean and dividing by the sd
+    val <- scale(intensity)[,1]
+    
+    # Calculates local geary-c.
+    # Details in paper: A Local Indicator of Multivariate SpatialAssociation: Extending Geary’s c, from Luc Anselin
+    n <- length(intensity)
+    locgc <- numeric(n)
+    for (i in c(1:n)) {
+      locgc[i] <- sum(b[i,] * (val[i] - val)^2)
+    }
+    
+    
+    #--------------------------------------Comprovation:---------------------------------------
+    # General Geary-c from local:
+    # general <- sum(locgc)/(2*sum(nb_b))
+    # 
+    # g_sna <- intergraph::asNetwork(g)
+    # general_ref <- sna::nacf(g_sna, intensity, type = 'geary', mode = "graph")[2]
+    #------------------------------------------------------------------------------------------
+    
+    
+    # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
+    sig_dstr <- NA
+
+    sig_dstr[locgc < 1] <- 2 # positive spatial autocorrelation
+    sig_dstr[locgc == 1] <- 3 # no spatial autocorrelation
+    sig_dstr[locgc > 1] <- 4 # negative spatial autocorrelation
+    
+    sig_dstr[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
+    
+    data_df <- data.frame(xcoord = node_coords$xcoord, 
+                          ycoord = node_coords$ycoord, 
+                          value = sig_dstr)
+    
+  }else if(heattype == 'getis'){ # Local Getis-G*
+    # TODO: Implement Getis G.
+    
+    locgg <- spdep::localG(x = intensity, listw = b_listw)
+    
+    # create a new variable identifying the moran plot quadrant for each observation, dismissing the non-significant ones
+    sig_dstr <- NA
+
+    data_df <- data.frame(xcoord = node_coords$xcoord, 
+                          ycoord = node_coords$ycoord, 
+                          value = sig_dstr)
+    
+    
     
   }else if(heattype == 'v_intensity'){
     norm_int <- (intensity - min(intensity)) / (max(intensity) - min(intensity))
@@ -722,41 +789,4 @@ ShortestNodeDistance.intensitynet <- function(obj, node_id1, node_id2){
     weight_sum <- length(weighted_path)
   }
   list(weight = weight_sum, path = weighted_path)  
-}
-
-
-#' Get the laplacian geary matrix representation of the given network with the given intensity.
-#' For further details about the representation, refer to the paper: Yamada, H. Geary’s c and 
-#' Spectral Graph Theory. Mathematics 2021, 9, 2465. https://doi.org/10.3390/math9192465
-#' 
-#' @name LaplacianGearyRepresentation.intensitynet
-#' 
-#' @param obj intensitynet object
-#' @param intensity_type name of the intenisty used to plot the heatmap. For undirected networks: 'intensity'. 
-#' For directed networks: 'intensity_in' or 'intensity_out'. For mixed networks: 'intensity_in', 'intensity_out', 
-#' 'intensity_und' or 'intensity_all'
-#' 
-#' @return matrix
-#' 
-LaplacianGearyRepresentation.intensitynet <- function(obj, intensity_type){
-  g <- obj$graph
-  n_v <- igraph::gorder(g)
-  
-  l_mtx <- as.matrix(igraph::laplacian_matrix(g,  weights = NA)) # Unweighted Laplacian matrix
-  l_eigen <- eigen(l_mtx) # Eigenvalues and eigenvectors
-  y <- tcrossprod(l_eigen[["vectors"]],l_eigen[["vectors"]]) # y = U*U^T
-  
-  omega <- sum(igraph::vertex_attr(g, intensity_type)) # Sum of specified vertex weights
-  
-  id_mtx <- diag(n_v) # Identity matrix (In)
-  
-  ones <- as.matrix(rep(1, n_v), ncol = n_v)
-  ones_t_ones <- crossprod(ones, ones) 
-  
-  # Ql = In - l(l^T*l)^-1*l^T 
-  ql <- id_mtx - ones%*%solve(ones_t_ones)%*%t(ones)  # solve = inverse of a matrix (^-1)
-  
-  # c = ( (n-1) / omega) * ( (y^T*L*y) / (y^T*Q*y) )
-  c <- ( ( n_v - 1 ) / omega ) * ( (solve(y)%*%l_mtx%*%y) / (solve(y)%*%ql%*%y) )
-  c
 }
