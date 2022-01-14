@@ -556,18 +556,22 @@ ggplot(all_df, aes(x=xcoord,y=ycoord, color=cat)) +
 
 
 #-----------------------------------SPATSTAT CHICAGO DATA---------------------------------------------
+library(spatstat)
 data(chicago)
-plot(chicago)
-chicago_df <- as.data.frame(chicago[["data"]])
-edges <- cbind(chicago[["domain"]][["from"]], chicago[["domain"]][["to"]])
-chicago_net <- graph_from_edgelist(edges)
 
-chicago_adj_mtx <- as.matrix(as_adjacency_matrix(chicago_net))
+chicago_df <- as.data.frame(chicago[["data"]]) # Get as dataframe the data from Chicago
+
+# Get the adjacency matrix. One way is to create an igraph object from the edge coordinates.
+edges <- cbind(chicago[["domain"]][["from"]], chicago[["domain"]][["to"]])
+chicago_net <- igraph::graph_from_edgelist(edges)
+
+# And then use the igraph function 'as_adjacency_matrix'
+chicago_adj_mtx <- as.matrix(igraph::as_adjacency_matrix(chicago_net))
 chicago_node_coords <- data.frame(xcoord = chicago[["domain"]][["vertices"]][["x"]], 
                                   ycoord = chicago[["domain"]][["vertices"]][["y"]])
 
+# Create a dataframe with the coordinates of the events 'assault'
 chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
-
 assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
                                   ycoord = chicago_assault[,2])
 
@@ -575,16 +579,71 @@ node_coords_obj <- list(node_coords = chicago_node_coords)
 class(node_coords_obj) <- "netTools"
 dist_mtx <- CalculateDistancesMtx(node_coords_obj)
 
-intnet_chicago <- intensitynet(chicago_adj_mtx, 
+#-------UNDIRECTED:
+
+und_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                node_coords = chicago_node_coords, 
                                event_coords = assault_coordinates)
-intnet_chicago <- CalculateEventIntensities(intnet_chicago)
-chicago_g <- intnet_chicago$graph
-PlotHeatmap(intnet_chicago, heattype='moran_i')
-PlotHeatmap(intnet_chicago, heattype='geary')
-PlotHeatmap(intnet_chicago, heattype='intensity')
+und_intnet_chicago <- CalculateEventIntensities(und_intnet_chicago)
+
+
+g <- und_intnet_chicago$graph
+gen_corr <- NodeGeneralCorrelation(und_intnet_chicago, dep_type = 'correlation', lag_max = 2, 
+                                   intensity = igraph::vertex_attr(g)$intensity)
+
+data_moran <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'moran', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+moran_i <- data_moran$correlation
+intnet <- data_moran$intnet
+
+data_geary <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'geary', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+geary <- data_geary$correlation
+intnet <- data_geary$intnet
+
+chicago_g <- und_intnet_chicago$graph
+
+short_path_int <- ShortestPathIntensity(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300')
+
+
+
+
+
+#-------DIRECTED:
+dir_intnet_chicago <- intensitynet(chicago_adj_mtx, 
+                                   node_coords = chicago_node_coords, 
+                                   event_coords = assault_coordinates,
+                                   graph_type='directed')
+dir_intnet_chicago <- CalculateEventIntensities(dir_intnet_chicago)
+
+data_moran <- NodeLocalCorrelation(dir_intnet_chicago, 
+                                   dep_type = 'moran_i', 
+                                   intensity = igraph::vertex_attr(dir_intnet_chicago$graph)$intensity_in)
+moran_i <- data_moran$correlation
+intnet <- data_moran$intnet
+
+data_geary <- NodeLocalCorrelation(dir_intnet_chicago, 
+                                   dep_type = 'geary', 
+                                   intensity = igraph::vertex_attr(dir_intnet_chicago$graph)$intensity_in)
+geary <- data_geary$correlation
+intnet <- data_geary$intnet
+
+#-------MIXED:
+mix_intnet_chicago <- intensitynet(chicago_adj_mtx, 
+                                   node_coords = chicago_node_coords, 
+                                   event_coords = assault_coordinates,
+                                   graph_type='mixed')
+mix_intnet_chicago <- CalculateEventIntensities(mix_intnet_chicago)
 
 #--------------------------------------Plot Chicago events-------------------------------------------
+PlotNeighborhood(und_intnet_chicago, node_id = 'V300')
+
+PlotHeatmap(und_intnet_chicago, heattype='moran')
+PlotHeatmap(und_intnet_chicago, heattype='geary')
+PlotHeatmap(und_intnet_chicago, heattype='intensity')
+
 chicago_edge_coords <- data.frame(xcoord1 = chicago[["domain"]][["lines"]][["ends"]][["x0"]],
                                   ycoord1 = chicago[["domain"]][["lines"]][["ends"]][["y0"]],
                                   xcoord2 = chicago[["domain"]][["lines"]][["ends"]][["x1"]],
@@ -601,6 +660,11 @@ ggplot(chicago_plot, aes(x=xcoord,y=ycoord, color=cat)) +
                colour="grey") +
   scale_y_continuous(name="y-coordinate") + 
   scale_x_continuous(name="x-coordinate") + theme_bw()
+
+sub_intnet_chicago <- ApplyWindow(dir_intnet_chicago, 
+                                  x_coords = c(300, 900), 
+                                  y_coords = c(500, 1000))
+PlotHeatmap(sub_intnet_chicago, heattype='geary')
 
 
 #-----------------------------------------TESTING WINDOW SUB_GRAPH--------------------------------------

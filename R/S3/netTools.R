@@ -87,7 +87,7 @@ InitGraph.netTools <- function(obj){
 }
 
 
-#' Calculates the distances between all pair of nodes from the given network
+#' Calculates the distances between all pairs of nodes from the given network
 #'
 #' @name CalculateDistancesMtx.netTools 
 #'
@@ -132,13 +132,13 @@ SetNetCoords.netTools <- function(obj){
 }
 
 
-#' Sets the given intensites as an edge attribute to the given igraph network
+#' Sets the given intensities as an edge attribute to the given igraph network
 #'
 #' @name SetEdgeIntensity.netTools 
 #'
 #' @param obj netTools object -> list(graph: igraph, node_id1: node id, node_id2: node id, intensity: edge intensity)
 #' 
-#' @return igraph network with the given intensities as an attributes of the edges
+#' @return igraph network with the given intensities as attributes of the edges
 #' 
 SetEdgeIntensity.netTools <- function(obj){
   g <- obj$graph
@@ -153,13 +153,14 @@ SetEdgeIntensity.netTools <- function(obj){
 }
 
 
-#' Sets the given intensites as a node attribute to the given igraph network
+#' Sets the given intensities as a node attribute to the given igraph network
 #'
 #' @name SetNodeIntensity.netTools 
 #'
 #' @param obj netTools object -> list(graph: igraph, node_id: node id, intensity: node intensity)
 #' 
-#' @return igraph network with the given intensities as an attributes of the nodes
+#' @return igraph network with the given intensities as attributes of the nodes
+#' 
 SetNodeIntensity.netTools <- function(obj){
   g <- obj$graph
   node_id <- obj$node_id
@@ -267,7 +268,7 @@ GeoreferencedPlot.netTools <- function(obj, vertex_labels='', edge_labels='', xy
 #' 
 #' @param obj netTools object -> list(graph: igraph, data_df: dataframe(intensity: intensity of the nodes, 
 #' xcoord: x coordinates of the nodes, ycoord: y coordinates of the nodes, heattype: data wich the heatmap will refer), 
-#' mode: ('moran_i', 'getis' or 'intensity'))
+#' mode: ('moran', 'getis' or 'intensity'))
 #' @param ... extra arguments for the ggplot
 #' 
 GeoreferencedGgplot2.netTools <- function(obj, ...){
@@ -287,7 +288,7 @@ GeoreferencedGgplot2.netTools <- function(obj, ...){
   colnames(edges_df) <- c("xcoord1","ycoord1","xcoord2","ycoord2")
   
   #if(is.null(data_df$intensity) || is.na(data_df$heattype)){
-  if(mode == 'moran_i') {
+  if(mode == 'moran') {
     # ggplot2::ggplot(data_df, ggplot2::aes(xcoord, ycoord), ...) + 
     #   ggplot2::ggplot2::geom_point(shape = 19,
     #              size = 1.5,
@@ -588,7 +589,7 @@ PointToSegment <- function(obj) {
 }
 
 
-#' Creates a directed adjacency matrix from an Undirected one with random directions (in out edges) 
+#' Creates a directed adjacency matrix from an Undirected one with random directions (in-out edges) 
 #' but with the same connections between nodes.
 #'
 #' @param obj netTools object -> list(mtx: matrix)

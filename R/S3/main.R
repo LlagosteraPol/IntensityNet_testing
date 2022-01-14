@@ -14,7 +14,8 @@ source("./intensitynetUnd.R", local = TRUE)
 source("./netTools.R", local = TRUE)
 
 
-#' Constructor of the class intensitynet
+#' Constructor of the class intensitynet. In order to create an intensitynet object, it is needed; an adjacency matrix, the
+#' coordinates of the nodes and the coordinates of the events.
 #'
 #' @name intensitynet
 #'
@@ -22,9 +23,33 @@ source("./netTools.R", local = TRUE)
 #' @param node_coords Nodes latitude and longitude matrix
 #' @param event_coords Events latitude and longitude matrix
 #' @param graph_type Network type: 'undirected' (default), 'directed' or 'mixed' 
-#' 
-#' @return intensitynet object containing: graph=<igraph>, events = <matrix>, graph_type = c('directed', 'undirected', 'mixed'), 
+#'
+#' @return intensitynet object containing: graph = <igraph>, events = <matrix>, graph_type = c('directed', 'undirected', 'mixed'), 
 #' distances = <matrix>
+#' 
+#' @examples
+#' library(spatstat)
+#' data(chicago)
+#' chicago_df <- as.data.frame(chicago[["data"]]) # Get as dataframe the data from Chicago
+#'
+#' # Get the adjacency matrix. One way is to create an igraph object from the edge coordinates.
+#' edges <- cbind(chicago[["domain"]][["from"]], chicago[["domain"]][["to"]])
+#' chicago_net <- igraph::graph_from_edgelist(edges)
+#'
+#' # And then use the igraph function 'as_adjacency_matrix'
+#' chicago_adj_mtx <- as.matrix(igraph::as_adjacency_matrix(chicago_net))
+#' chicago_node_coords <- data.frame(xcoord = chicago[["domain"]][["vertices"]][["x"]], 
+#'                                  ycoord = chicago[["domain"]][["vertices"]][["y"]])
+#'
+#' # Create a dataframe with the coordinates of the events 'assault'
+#' chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
+#' assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
+#'                                   ycoord = chicago_assault[,2])
+#'                                   
+#' # Create the intensitynet object, in this case will be undirected 
+#' intnet_chicago <- intensitynet(chicago_adj_mtx, 
+#'                                node_coords = chicago_node_coords, 
+#'                                event_coords = assault_coordinates)
 #' @export
 intensitynet <- function(adjacency_mtx, node_coords, event_coords, graph_type = 'undirected'){
   
@@ -73,14 +98,9 @@ NodeGeneralCorrelation <- function(obj, dep_type, lag_max, intensity){
 }
 
 
-NodeLocalCorrelation <- function(obj, dep_type = 'moran_i', intensity){
+NodeLocalCorrelation <- function(obj, dep_type = 'moran', intensity){
   UseMethod("NodeLocalCorrelation")
 }
-
-
-# plot <- function(obj, vertex_intensity='none', edge_intensity='none', xy_axes=TRUE, enable_grid=FALSE, ...){
-#   UseMethod("plot")
-# }
 
 
 PlotHeatmap <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
@@ -113,7 +133,21 @@ ShortestPathIntensity <- function(obj,  node_id1, node_id2, weighted = FALSE){
   UseMethod("ShortestPathIntensity")
 }
 
-
+#' Calculates edgewise and mean nodewise intensities for the given intensitynet object
+#' 
+#' @name CalculateEventIntensities
+#' 
+#' @param obj intensitynetDir object
+#' 
+#' @return proper intensitynet object (Undirected, Directed or Mixed) with a graph containing all the intensities as 
+#' attributes of its nodes and edges
+#' 
+#' @examples 
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' intnet_chicago <- CalculateEventIntensities(intnet_chicago)
+#' 
+#' @export
 CalculateEventIntensities <- function(obj){
   UseMethod("CalculateEventIntensities")
 }
@@ -145,7 +179,7 @@ LaplacianGearyRepresentation <- function(obj,  intensity_type = 'none'){
 
 
 #' If not calculated, calculates the intesnity of the edge with nodes; node_id1, node_id2. 
-#' If the edge already contains an intensity, gives it directly.
+#' If the edge already contains an intensity, give it directly.
 #'
 #' @name EdgeIntensity.intensitynet
 #' 
@@ -327,6 +361,12 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
 #' @param path_nodes vector containing the node ID's of the path
 #' 
 #' @return intensity of the path
+#' @examples
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' short_path <- ShortestPathIntensity(intnet_chicago, node_id1 = 'V1', node_id2 = 'V300')
+#' PathIntensity(intnet_chicago, short_dist$path)
+#' 
 #' @export
 PathIntensity.intensitynet <- function(obj, path_nodes){
   edge_counts <- list()
@@ -360,6 +400,11 @@ PathIntensity.intensitynet <- function(obj, path_nodes){
 #' @param weighted TRUE or FALSE (default), tell if the distances must be taken into account 
 #' 
 #' @return intensity of the shortest path and the path vertices
+#' 
+#' @examples
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' ShortestPathIntensity(intnet_chicago, node_id1 = 'V1', node_id2 = 'V300')
+#' 
 #' @export
 ShortestPathIntensity.intensitynet <- function(obj,  node_id1, node_id2, weighted = FALSE){
   g <- obj$graph
@@ -370,22 +415,29 @@ ShortestPathIntensity.intensitynet <- function(obj,  node_id1, node_id2, weighte
     path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
   }
   
-  return(list(intensity = PathIntensity(path), path = path))
+  return(list(intensity = PathIntensity(obj, path), path = path))
 }
 
 
-#' Gives general node correlation of the network (choosing from: normal correlation, covariance, 
+#' Gives general node correlation of the network (choosing from normal correlation, covariance, 
 #' moran-i or geary)
 #' 
 #' @name NodeGeneralCorrelation.intensitynet
 #'
 #' @param obj intensitynet object
-#' @param dep_type the type of dependence statistic to be computed ("correlation", "covariance",
-#' "moran", "geary").
+#' @param dep_type 'correlation', 'covariance', moran', 'geary'. The type of 
+#' dependence statistic to be computed.
 #' @param lag_max Maximum geodesic lag at which to compute dependence
 #' @param intensity vector containing the intensity values that the heatmaps
 #' 
 #' @return A vector containing the dependence statistics (ascending from order 0). 
+#' 
+#' @examples 
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' g <- intnet_chicago$graph
+#' gen_corr <- NodeGeneralCorrelation(intnet_chicago, dep_type = 'correlation', lag_max = 2, 
+#'                                    intensity = igraph::vertex_attr(g)$intensity)
 #' @export
 NodeGeneralCorrelation.intensitynet <- function(obj, dep_type, lag_max, intensity){
   g <- obj$graph
@@ -397,17 +449,29 @@ NodeGeneralCorrelation.intensitynet <- function(obj, dep_type, lag_max, intensit
 #' Gives node local moran-i or geary-c correlations
 #' 
 #' @name NodeLocalCorrelation.intensitynet
+#' 
+#' @source *Luc Anselin. A Local Indicator of Multivariate SpatialAssociation: Extending Geary's c, Geographical Analysis 2018; doi: https://doi.org/10.1111/gean.12164
 #'
 #' @param obj intensitynet object
-#' @param dep_type 'moran_i', 'getis' or 'geary'. Type of local correlation to be computed (Moran-i, Getis-Gstar, Geary-c*),
-#' default = 'moran_i. * Details in paper: A Local Indicator of Multivariate SpatialAssociation: 
-#' Extending Geary’s c, from Luc Anselin
-#' @param intensity vector containing the intensity values that the heatmaps
+#' @param dep_type 'moran', 'getis' or 'geary'. Type of local correlation to be computed (Moran-i, Getis-Gstar, Geary-c*),
+#' default = 'moran'.
+#' @param intensity vector containing the intensity values that which are used to calculate the correlation.
 #' 
-#' @return An intnet object wich contains a igraph network with the selected correlation 
+#' @return An intnet object which contains an igraph network with the selected correlation 
 #' added into the vertices attributes
+#' 
+#' @examples 
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' g <- intnet_chicago$graph
+#' data_moran <- NodeLocalCorrelation(intnet_chicago, 
+#'                                    dep_type = 'moran', 
+#'                                    intensity = igraph::vertex_attr(g)$intensity)
+#' moran_i <- data_moran$correlation
+#' intnet <- data_moran$intnet
+#' 
 #' @export
-NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensity){
+NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran', intensity){
   g <- obj$graph
   adj_mtx <- igraph::as_adj(graph = g)
   adj_listw <- spdep::mat2listw(adj_mtx)
@@ -442,9 +506,9 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
     intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "geary", value = locgc)
     return(list(correlation = locgc, intnet = intnet))
     
-  } else if (dep_type == 'moran_i'){
+  } else if (dep_type == 'moran'){
     locmoran <- spdep::localmoran(x = intensity, listw = w_listw, zero.policy=TRUE)
-    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = 'moran_i', value = locmoran[, 'Ii'])
+    intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = 'moran', value = locmoran[, 'Ii'])
     return(list(correlation = locmoran, intnet = intnet))
     
   } else if (dep_type == 'getis'){
@@ -452,6 +516,8 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
     locgg <- spdep::localG(x = intensity, listw = b_listw)
     intnet <- SetNetworkAttribute(obj = obj, where = 'vertex', name = "getis", value = locgg)
     return(list(correlation = locgg, intnet = intnet))
+  }else{
+    stop("Error: wrong 'dep_type' argument. Allowed arguments are; 'moran', 'getis', 'geary'.")
   }
 }
 
@@ -461,7 +527,7 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
 #' @name PlotHeatmap.intensitynet
 #'
 #' @param obj intensitynet object
-#' @param heattype moran_i': Local Moran-i correlation (with 999 permutations), 'geary': Local Geary-c* 
+#' @param heattype 'moran': Local Moran-i correlation (with 999 permutations), 'geary': Local Geary-c* 
 #' correlation. The correlations will use the indicated intensity type.
 #' The function also allow to only plot the intensity heatmap 'v_intensity' for vertices or 'e_intensity' for edges.
 #' @param intensity_type name of the intenisty used to plot the heatmap. For undirected networks: 'intensity'. 
@@ -470,6 +536,12 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = 'moran_i', intensi
 #' the intensity (undirected) or intensity_in (directed) values from the network nodes.
 #' @param net_vertices chosen vertices to plot the heatmap (or it related edges in case to plot the edge heatmap)
 #' @param ... extra arguments for the class ggplot
+#' 
+#' @examples
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' PlotHeatmap(intnet_chicago, heattype='moran')
+#' 
 #' @export
 PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'none', net_vertices = NULL, ...){
   g <- obj$graph
@@ -478,9 +550,9 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
   nb <- adj_listw$neighbours
   w_listw <- spdep::nb2listw(nb, style = "W",  zero.policy=TRUE)
   
-  if(heattype != 'none' && heattype != 'moran_i' && heattype != 'geary' && 
+  if(heattype != 'none' && heattype != 'moran' && heattype != 'geary' && 
      heattype != 'v_intensity' && heattype != 'e_intensity' && heattype != 'intensity'){
-    warning('Parameter "heattype" should be "moran_i", "geary", "intensity", 
+    warning('Parameter "heattype" should be "moran", "geary", "intensity", 
             "v_intensity", "e_intensity" or "none". Using default ("none").')
   }
   
@@ -508,7 +580,7 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
                             ycoord = igraph::vertex_attr(graph = g, name = 'ycoord'))
   rownames(node_coords) <- igraph::vertex_attr(graph = g, name = 'name')
   
-  if(heattype == 'moran_i'){ # Local Moran-i
+  if(heattype == 'moran'){ # Local Moran-i
     locmoran <- spdep::localmoran_perm(x = intensity, 
                                        listw = w_listw, 
                                        zero.policy = TRUE, 
@@ -572,7 +644,7 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
     sig_dstr <- NA
     
     sig_dstr[locgc < 1] <- 2 # positive spatial autocorrelation
-    sig_dstr[locgc == 1] <- 3 # no spatial autocorrelation
+    sig_dstr[locgc == 1 || is.na(locgc)] <- 3 # no spatial autocorrelation
     sig_dstr[locgc > 1] <- 4 # negative spatial autocorrelation
     
     sig_dstr[setdiff(as.numeric(igraph::V(g)), net_vertices)] <- 1 # Not contemplated vertices 
@@ -582,6 +654,7 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
                           value = sig_dstr)
     
   }else if(heattype == 'getis'){ # Local Getis-G*
+    print("Needs implementation")
     # TODO: Implement Getis G.
     
     # locgg <- spdep::localG(x = intensity, listw = b_listw)
@@ -630,6 +703,12 @@ PlotHeatmap.intensitynet <- function(obj, heattype = 'none', intensity_type = 'n
 #' @param obj Intensitynet object
 #' @param node_id Id of the node which the plot will be focused
 #' @param ... Extra arguments for plotting
+#' 
+#' @examples
+#' 
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' PlotNeighborhood(intnet_chicago, node_id = 'V300')
+#' 
 #' @export
 PlotNeighborhood.intensitynet <- function(obj, node_id, ...){
   g <- obj$graph
@@ -707,11 +786,20 @@ SetNetworkAttribute.intensitynet <- function(obj, where, name, value){
 
 #' Get the intensitynet object delimited by the given window
 #' 
+#' @name ApplyWindow.intensitynet
+#' 
 #' @param obj intensitynet object
 #' @param x_coords vector containing the x coordinate limits of the window
 #' @param y_coords vector containing the y coordinate limits of the window
 #' 
 #' @return intensitynet object delimited by the window (sub-part of the original)
+#' 
+#' @examples
+#' # intnet_chicago -> is an intensitynet object, check example from 'intensitynet' function
+#' sub_intnet_chicago <- ApplyWindow(intnet_chicago, 
+#'                                   x_coords = c(300, 900), 
+#'                                   y_coords = c(500, 1000))
+#' 
 #' @export
 ApplyWindow.intensitynet <- function(obj, x_coords, y_coords){
   g <- obj$graph
