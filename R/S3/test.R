@@ -487,8 +487,8 @@ for (node_id in V(g)) {
 }
 
 # Plotting subgraph
-plot_neighborhood(intnet_und, 'V300')
-plot_neighborhood(intnet_und, 'V39')
+PlotNeighborhood(intnet_und, 'V300')
+PlotNeighborhood(intnet_und, 'V39')
 
 v39v61_data <- list(p1=c(vertex_attr(g, 'xcoord', 'V39'), vertex_attr(g, 'ycoord', 'V39')), 
                     p2=c(vertex_attr(g, 'xcoord', 'V61'), vertex_attr(g, 'ycoord', 'V61')), 
@@ -640,7 +640,7 @@ mix_intnet_chicago <- CalculateEventIntensities(mix_intnet_chicago)
 #--------------------------------------Plot Chicago events-------------------------------------------
 PlotNeighborhood(und_intnet_chicago, node_id = 'V300')
 
-PlotHeatmap(und_intnet_chicago, heattype='moran')
+PlotHeatmap(und_intnet_chicago, heattype='moran', show_events = TRUE)
 PlotHeatmap(und_intnet_chicago, heattype='geary')
 PlotHeatmap(und_intnet_chicago, heattype='intensity')
 

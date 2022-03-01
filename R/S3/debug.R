@@ -28,5 +28,18 @@ data_moran <- NodeLocalCorrelation(intnet_chicago, dep_type = 'moran', intensity
 moran_i <- data_moran$correlation
 intnet_chicago <- data_moran$intnet
 
-PlotHeatmap(intnet_chicago, heattype = 'moran')
-plot(intnet_chicago, enable_grid = TRUE)
+PlotHeatmap(intnet_chicago, show_events = TRUE)
+
+PlotHeatmap(intnet_chicago, heattype = 'e_intensity', show_events = TRUE)
+
+PlotHeatmap(intnet_chicago, heattype = 'moran', show_events = TRUE)
+
+PlotHeatmap(intnet_chicago, heattype = 'geary', show_events = TRUE)
+
+plot(intnet_chicago, enable_grid = TRUE, show_events = TRUE)
+
+
+
+pdf("tmp.pdf",height=8,width=8)
+plot(intnet_chicago, enable_grid = TRUE, show_events = TRUE)
+dev.off()

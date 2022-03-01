@@ -22,6 +22,7 @@ nodes <- read.table("../../Data/nodes.txt", header=TRUE, row.names=1) # says fir
 
 # Event (crime coordinates)
 crimes <- read.table("../../Data/crimes_corrected.txt", header=TRUE, row.names=1) # says first column are rownames
+crimes_old <- read.table("../../Data/crimes.txt", header=TRUE, row.names=1) # says first column are rownames
 
 #subset of events
 crim <- crimes[11:111,] # From crimes, take 11 to 111 (both included)
