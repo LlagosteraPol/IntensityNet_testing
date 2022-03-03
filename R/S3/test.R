@@ -575,6 +575,7 @@ chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
 assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
                                   ycoord = chicago_assault[,2])
 
+
 node_coords_obj <- list(node_coords = chicago_node_coords)
 class(node_coords_obj) <- "netTools"
 dist_mtx <- CalculateDistancesMtx(node_coords_obj)
@@ -583,7 +584,7 @@ dist_mtx <- CalculateDistancesMtx(node_coords_obj)
 
 und_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                node_coords = chicago_node_coords, 
-                               event_coords = assault_coordinates)
+                               event_data = chicago_df)
 und_intnet_chicago <- CalculateEventIntensities(und_intnet_chicago)
 
 
@@ -614,7 +615,7 @@ short_path_int <- ShortestPathIntensity(und_intnet_chicago, node_id1 = 'V1', nod
 #-------DIRECTED:
 dir_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                    node_coords = chicago_node_coords, 
-                                   event_coords = assault_coordinates,
+                                   event_data = assault_coordinates,
                                    graph_type='directed')
 dir_intnet_chicago <- CalculateEventIntensities(dir_intnet_chicago)
 
@@ -633,7 +634,7 @@ intnet <- data_geary$intnet
 #-------MIXED:
 mix_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                    node_coords = chicago_node_coords, 
-                                   event_coords = assault_coordinates,
+                                   event_data = assault_coordinates,
                                    graph_type='mixed')
 mix_intnet_chicago <- CalculateEventIntensities(mix_intnet_chicago)
 

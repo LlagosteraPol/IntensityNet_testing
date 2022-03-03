@@ -23,7 +23,7 @@ source("./netTools.R", local = TRUE)
 #'
 #' @param adjacency_mtx Network adjacency matrix
 #' @param node_coords Nodes latitude and longitude matrix (coordinates)
-#' @param event_coords Events latitude and longitude matrix (coordinates)
+#' @param event_data DataFrame with event latitude and longitude coordinates (mandatory columns) and optional attributes related to the events
 #' @param graph_type Network type: 'undirected' (default), 'directed' or 'mixed' 
 #' @param event_correction Value that determines how far can be an event to be considered part of a segment (default 5). 
 #' This value highly depends on the given coordinate system
@@ -54,10 +54,10 @@ source("./netTools.R", local = TRUE)
 #' # Create the intensitynet object, in this case will be undirected 
 #' intnet_chicago <- intensitynet(chicago_adj_mtx, 
 #'                                node_coords = chicago_node_coords, 
-#'                                event_coords = assault_coordinates)
+#'                                event_data = assault_coordinates)
 #' 
 #' @export
-intensitynet <- function(adjacency_mtx, node_coords, event_coords, graph_type = 'undirected', event_correction = 5){
+intensitynet <- function(adjacency_mtx, node_coords, event_data, graph_type = 'undirected', event_correction = 5){
   
   if (is.data.frame(adjacency_mtx)) {
     adjacency_mtx <- as.matrix(adjacency_mtx)
@@ -66,12 +66,13 @@ intensitynet <- function(adjacency_mtx, node_coords, event_coords, graph_type = 
   if (is.data.frame(node_coords)) {
     node_coords <- as.matrix(node_coords)
   }
-  
-  if (is.data.frame(event_coords)) {
-    event_coords <- as.matrix(event_coords)
-  }
   colnames(node_coords) <- c("xcoord", "ycoord")
-  colnames(event_coords) <- c("xcoord", "ycoord")
+  
+  
+  if (is.matrix(event_data)) {
+    event_data <- as.data.frame(event_data)
+  }
+  names(event_data)[1:2] <- c("xcoord", "ycoord")
   
   node_coords_obj <- list(node_coords = node_coords)
   class(node_coords_obj) <- "netTools"
@@ -86,7 +87,7 @@ intensitynet <- function(adjacency_mtx, node_coords, event_coords, graph_type = 
   class(net_setup) <- "netTools"
   g <- InitGraph(net_setup)
   
-  intnet <- list(graph = g, events = event_coords, graph_type = graph_type, 
+  intnet <- list(graph = g, events = event_data, graph_type = graph_type, 
                  distances_mtx = dist_mtx, event_correction = event_correction)
   attr(intnet, "class") <- "intensitynet"
   # Select the proper class
@@ -338,14 +339,14 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
     stop("The two vertices cannot be the same.")
   }
   
-  if(z <= 0){
-    message("Warning: 'z' cannot be equal or less than 0, using default.")
+  if(z < 0){
+    message("Warning: 'z' cannot be less than 0, using default.")
     z <- 5
   }
   
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
-  event_coords <- obj$events
+  event_data <- obj$events
   
   # Note that the igraph library already handle the error when one of the node id's 
   # are not part of the graph. Also gives the proper information about it.
@@ -379,8 +380,8 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
   
   indicator <- 0
   # Counting events
-  for(row in 1:nrow(event_coords)) {
-    ep <- c(event_coords[row, 1], event_coords[row, 2])
+  for(row in 1:nrow(event_data)) {
+    ep <- c(event_data[row, 1], event_data[row, 2])
     dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
     class(dist_obj) <- 'netTools'
     d <- PointToSegment(dist_obj)
@@ -397,35 +398,49 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
 }
 
 
-#' Calculate all the edge intensities of the graph. It's more accurate than using iteratively the 
+#' Calculate all the edge intensities of the graph. It's more fast than using iteratively the 
 #' function EdgeIntensity for all edges.
 #' 
 #' @name AllEdgeIntensities.intensitynet
 #' 
 #' @param obj intensitynet object
-#' @param z Maximum distance between the event and the edge to consider the event part of the edge.
 #' 
 #' @return intensitynet class object where the graph contains all the edge intensities as an attribute
 #' 
-AllEdgeIntensities.intensitynet <- function(obj, z = 5){
-  if(z <= 0){
-    message("Warning: 'z' cannot be equal or less than 0, using default.")
+AllEdgeIntensities.intensitynet <- function(obj){
+  if(obj$event_correction < 0){
+    message("Warning: event correction value cannot be less than 0, using default.")
     z <- 5
   }
+  else{
+    z <- obj$event_correction
+  }
+  
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
-  event_coords <- obj$events
+  event_data <- obj$events
   edge_list <- igraph::ends(g, igraph::E(g), names=FALSE)
   
-  if(length(event_coords) == 0){
+  if(length(event_data) == 0){
     return(NA)
   }
   
-  edge_events <- edge_list[,1]
-  edge_events <- cbind(edge_events, edge_list[,2])
-  edge_events <- cbind(edge_events, 0)
-  edge_events <- cbind(edge_events, 0)
-  colnames(edge_events) <- c('from', 'to', 'n_events', 'intensity')
+  # Prepare structure to set information in the edges
+  edge_events <- data.frame(from = edge_list[,1], 
+                            to = edge_list[,2],
+                            n_events = 0,
+                            intensity = 0)
+  
+  # Set up the names for the covariates of the events
+  if(ncol(event_data) > 2){
+    for(i in 3:ncol(event_data)){
+      if(is.numeric(event_data[,i])){
+        edge_events[colnames(event_data[i])] <- 0 # Set event column name
+      }else{
+        edge_events[as.character(unique(event_data[[i]]))] <- 0 # Set event unique variables as names
+      }
+    }
+  }
   
   node_coords <- as.numeric(igraph::V(g))
   node_coords <- cbind(node_coords, igraph::vertex_attr(g, "xcoord"))
@@ -433,11 +448,11 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
   colnames(node_coords) <- c('node', 'xcoord', 'ycoord')
   
   #start_time <- Sys.time() # debug only
-  pb = utils::txtProgressBar(min = 0, max = nrow(event_coords), initial = 0) 
+  pb = utils::txtProgressBar(min = 0, max = nrow(event_data), initial = 0) 
   message("Calculating edge intensities...")
   
   e_count <- 0
-  for(row in 1:nrow(event_coords)){
+  for(row in 1:nrow(event_data)){
     utils::setTxtProgressBar(pb, row)
     tmp_edge <- NULL
     shortest_d <- NULL
@@ -453,13 +468,13 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
       node1 <- node_coords[edge_events[edge_row, 'from'],][2:3]
       node2 <- node_coords[edge_events[edge_row, 'to'],][2:3]
       
-      ep <- event_coords[row, ]
+      ep <- event_data[row, ]
       dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
       class(dist_obj) <- 'netTools'
       d <- PointToSegment(dist_obj)
       
-      # If the event is at a distance less or equal 'z' from the edge (segment)
-      # connecting both given points (the road), then is counted as an event of that road
+      # If the event is at a distance less or equal 'z' from the edge (segment) which
+      # connects both given points (the road), then is counted as an event of that road
       if(d <= z){
         if(d == 0){
           tmp_edge <- edge_row
@@ -470,8 +485,19 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
         }
       }
     }
-    if (!is.null(tmp_edge)){
+    # Set up the information (except intensity) to the edge_event DataFrame
+    if ( !is.null(tmp_edge) ){
       edge_events[tmp_edge, 'n_events'] <- edge_events[tmp_edge, 'n_events'] + 1
+      
+      if(ncol(ep) > 2){
+        for(i_col in 5:ncol(ep)){
+          if( is.numeric(ep[,i_col]) ){
+            edge_events[tmp_edge, i_col] <- edge_events[tmp_edge, colnames(ep[i_col])] + ep[,i_col]
+          }else{
+            edge_events[tmp_edge, as.character(ep[,i_col])] <- edge_events[tmp_edge, as.character(ep[,i_col])] + 1
+          }
+        }
+      }
     }
     # If the intensity of all edges is already calculated return the object
     if(row == 1){
@@ -484,15 +510,29 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
   close(pb)
   #message(paste0("Time: ", Sys.time() - start_time)) # debug only
   
+  #Calculate intensity and proportions
   for (edge_row in 1:nrow(edge_events)) {
-    # Distance between the node and its neighbor
-    edge_dist <- abs(distances_mtx[edge_events[edge_row, 'from'], edge_events[edge_row, 'to']])
-    edge_events[edge_row, 'intensity'] <-  edge_events[edge_row, 'n_events'] / edge_dist
+    if(edge_events[edge_row, 'n_events'] > 0 ){
+      # Distance between the node and its neighbor
+      edge_dist <- abs(distances_mtx[edge_events[edge_row, 'from'], edge_events[edge_row, 'to']])
+      edge_events[edge_row, 'intensity'] <-  edge_events[edge_row, 'n_events'] / edge_dist
+      
+      if(ncol(edge_events) > 4){
+        for(i_col in 5:ncol(edge_events)){
+          edge_events[edge_row, i_col] <- edge_events[edge_row, i_col] / edge_events[edge_row, 'n_events'] 
+        }
+      }
+    }
   }
-  SetNetworkAttribute(obj = obj, 
-                      where = 'edge', 
-                      name = 'intensity', 
-                      value = as.matrix(edge_events[, 'intensity']))
+  
+  # Save information from 'edge_events' to the edge attributes of the network
+  for(i_col in 3:ncol(edge_events)){
+    obj <- SetNetworkAttribute(obj = obj, 
+                               where = 'edge', 
+                               name = colnames(edge_events[i_col]), 
+                               value = as.matrix(edge_events[, i_col]))
+  }
+  return(obj)
 }
 
 
@@ -930,7 +970,7 @@ SetNetworkAttribute.intensitynet <- function(obj, where, name, value){
     #g <- g %>% igraph::set_vertex_attr(name = name, value = value)
     g <- igraph::set_vertex_attr(g, name = name, value = value)
   } 
-
+  
   intnet <- list(graph = g, 
                  events = obj$events, 
                  graph_type = obj$graph_type, 
