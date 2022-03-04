@@ -27,8 +27,7 @@ MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
     for (neighbor_id in neighbors_list){
       ev_mat[as.character(node_id), as.character(neighbor_id)] <- EdgeIntensity(obj = obj, 
                                                                                 node_id1 = igraph::V(g)[node_id]$name, 
-                                                                                node_id2 = igraph::V(g)[neighbor_id]$name,
-                                                                                z = obj$event_correction)
+                                                                                node_id2 = igraph::V(g)[neighbor_id]$name)
     }
     
     mean_intensity <- Reduce('+', ev_mat) / igraph::degree(g, node_id)
@@ -38,16 +37,17 @@ MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
 }
 
 
-#' Calculates edgewise and mean nodewise intensities for Undirected networks
+#' Calculates edgewise and mean nodewise intensities for for Undirected networks and, for each edge, the proportions of
+#' all event covariates.
 #' 
-#' @name CalculateEventIntensities.intensitynetUnd
+#' @name RelateEventsToNetwork.intensitynetUnd
 #' 
 #' @param obj intensitynetUnd object
 #' 
-#' @return intensitynetUnd object with a graph containing all the intensities as attributes of its nodes and edges
+#' @return proper intensitynetUnd object with a graph containing the nodewise intensity in the node 
+#' attributes and the edgewise intensities and event covariate proportions as edge attributes.
 #' 
-#' @export
-CalculateEventIntensities.intensitynetUnd = function(obj){
+RelateEventsToNetwork.intensitynetUnd = function(obj){
   g <- obj$graph
   counts <- c()
   
@@ -56,7 +56,7 @@ CalculateEventIntensities.intensitynetUnd = function(obj){
     return(obj)
   }
   
-  tmp_obj <- AllEdgeIntensities.intensitynet(obj)
+  tmp_obj <- EdgeIntensitiesAndProportions.intensitynet(obj)
   g <- tmp_obj$graph
   
   pb = utils::txtProgressBar(min = 0, max = igraph::gorder(g), initial = 0) 

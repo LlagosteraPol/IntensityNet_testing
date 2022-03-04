@@ -175,7 +175,7 @@ perpenidularDistance(dist_obj)
 
 
 intnet <- Intensitynet(Castellon, nodes, crim)
-intnet_all <- CalculateEventIntensities(intnet)
+intnet_all <- RelateEventsToNetwork(intnet)
 g <- intnet_all$graph
 
 
@@ -297,7 +297,7 @@ ggplot(df,aes(x,y))+geom_point(col="blue")+
 #-------------------------------------------------visNetwork----------------------------------------------
 
 intnet <- intensitynet(Castellon, nodes, crim)
-intnet <- CalculateEventIntensities(intnet)
+intnet <- RelateEventsToNetwork(intnet)
 intnet <- NodeLocalCorrelation(intnet, 'moran')
 intnet <- NodeLocalCorrelation(intnet, 'g')
 
@@ -341,7 +341,7 @@ nodes <- data.frame(id = paste(vertex_attr(g)$name),
 # BiocManager::install("graph")
 
 intnet <- intensitynet(Castellon, nodes, crim)
-intnet <- CalculateEventIntensities(intnet)
+intnet <- RelateEventsToNetwork(intnet)
 intnet <- NodeLocalCorrelation(intnet, 'moran')
 intnet <- NodeLocalCorrelation(intnet, 'g')
 
@@ -455,7 +455,7 @@ ggplot_net(intnet, heattype='locmoran')
 #----------------------------------COMPARE DATA WITH A REFERENCE-------------------------------------
 load("../../Data/meanintense.rdata") # Reference data (gives 'net' list object)
 intnet_und <- intensitynet(castellon, nodes, crim)
-intnet_und <- CalculateEventIntensities(intnet_und)
+intnet_und <- RelateEventsToNetwork(intnet_und)
 
 ref_g <- net$graph
 g <- intnet_und$graph
@@ -585,7 +585,7 @@ dist_mtx <- CalculateDistancesMtx(node_coords_obj)
 und_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                node_coords = chicago_node_coords, 
                                event_data = chicago_df)
-und_intnet_chicago <- CalculateEventIntensities(und_intnet_chicago)
+und_intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 
 
 g <- und_intnet_chicago$graph
@@ -617,7 +617,7 @@ dir_intnet_chicago <- intensitynet(chicago_adj_mtx,
                                    node_coords = chicago_node_coords, 
                                    event_data = assault_coordinates,
                                    graph_type='directed')
-dir_intnet_chicago <- CalculateEventIntensities(dir_intnet_chicago)
+dir_intnet_chicago <- RelateEventsToNetwork(dir_intnet_chicago)
 
 data_moran <- NodeLocalCorrelation(dir_intnet_chicago, 
                                    dep_type = 'moran_i', 
@@ -636,7 +636,7 @@ mix_intnet_chicago <- intensitynet(chicago_adj_mtx,
                                    node_coords = chicago_node_coords, 
                                    event_data = assault_coordinates,
                                    graph_type='mixed')
-mix_intnet_chicago <- CalculateEventIntensities(mix_intnet_chicago)
+mix_intnet_chicago <- RelateEventsToNetwork(mix_intnet_chicago)
 
 #--------------------------------------Plot Chicago events-------------------------------------------
 PlotNeighborhood(und_intnet_chicago, node_id = 'V300')

@@ -45,16 +45,11 @@ source("./netTools.R", local = TRUE)
 #' chicago_adj_mtx <- as.matrix(igraph::as_adjacency_matrix(chicago_net))
 #' chicago_node_coords <- data.frame(xcoord = chicago[["domain"]][["vertices"]][["x"]], 
 #'                                  ycoord = chicago[["domain"]][["vertices"]][["y"]])
-#'
-#' # Create a dataframe with the coordinates of the events 'assault'
-#' chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
-#' assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
-#'                                   ycoord = chicago_assault[,2])
 #'                                   
 #' # Create the intensitynet object, in this case will be undirected 
 #' intnet_chicago <- intensitynet(chicago_adj_mtx, 
 #'                                node_coords = chicago_node_coords, 
-#'                                event_data = assault_coordinates)
+#'                                event_data = chicago_df)
 #' 
 #' @export
 intensitynet <- function(adjacency_mtx, node_coords, event_data, graph_type = 'undirected', event_correction = 5){
@@ -282,23 +277,24 @@ ShortestPathIntensity <- function(obj,  node_id1, node_id2, weighted = FALSE){
   UseMethod("ShortestPathIntensity")
 }
 
-#' Calculates edgewise and mean nodewise intensities for the given intensitynet object
+#' Calculates edgewise and mean nodewise intensities for the given intensitynet object and, for each edge, the proportions of
+#' all event covariates.
 #' 
-#' @name CalculateEventIntensities
+#' @name RelateEventsToNetwork
 #' 
-#' @param obj intensitynetDir object
+#' @param obj intensitynet object
 #' 
-#' @return proper intensitynet object (Undirected, Directed or Mixed) with a graph containing all the intensities as 
-#' attributes of its nodes and edges
+#' @return proper intensitynet object (Undirected, Directed, or Mixed) with a graph containing the nodewise intensity in the node 
+#' attributes and the edgewise intensities and event covariate proportions as edge attributes.
 #' 
 #' @examples 
 #'
 #' data("und_intnet_chicago")
-#' intnet_chicago <- CalculateEventIntensities(und_intnet_chicago)
+#' intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 #' 
 #' @export
-CalculateEventIntensities <- function(obj){
-  UseMethod("CalculateEventIntensities")
+RelateEventsToNetwork <- function(obj){
+  UseMethod("RelateEventsToNetwork")
 }
 
 
@@ -307,13 +303,13 @@ MeanNodeIntensity <- function(obj, node_id){
 }
 
 
-EdgeIntensity <- function(obj, node_id1, node_id2, z){
+EdgeIntensity <- function(obj, node_id1, node_id2){
   UseMethod("EdgeIntensity")
 }
 
 
-AllEdgeIntensities <- function(obj, z){
-  UseMethod("AllEdgeIntensities")
+EdgeIntensitiesAndProportions <- function(obj){
+  UseMethod("EdgeIntensitiesAndProportions")
 }
 
 
@@ -334,14 +330,17 @@ SetNetworkAttribute <- function(obj, where, name, value){
 #' 
 #' @return Intensity of the edge
 #' 
-EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
+EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2){
   if(node_id1 == node_id2){
     stop("The two vertices cannot be the same.")
   }
   
-  if(z < 0){
-    message("Warning: 'z' cannot be less than 0, using default.")
+  if(obj$event_correction < 0){
+    message("Warning: event correction value cannot be less than 0, using default.")
     z <- 5
+  }
+  else{
+    z <- obj$event_correction
   }
   
   g <- obj$graph
@@ -401,13 +400,13 @@ EdgeIntensity.intensitynet <- function(obj,  node_id1, node_id2, z = 5){
 #' Calculate all the edge intensities of the graph. It's more fast than using iteratively the 
 #' function EdgeIntensity for all edges.
 #' 
-#' @name AllEdgeIntensities.intensitynet
+#' @name EdgeIntensitiesAndProportions.intensitynet
 #' 
 #' @param obj intensitynet object
 #' 
 #' @return intensitynet class object where the graph contains all the edge intensities as an attribute
 #' 
-AllEdgeIntensities.intensitynet <- function(obj){
+EdgeIntensitiesAndProportions.intensitynet <- function(obj){
   if(obj$event_correction < 0){
     message("Warning: event correction value cannot be less than 0, using default.")
     z <- 5
@@ -565,8 +564,7 @@ PathIntensity.intensitynet <- function(obj, path_nodes){
     
     path_intensity <- path_intensity + Reduce('+', EdgeIntensity(obj = obj, 
                                                                  node_id1 = prev, 
-                                                                 node_id2 = node_id,
-                                                                 z = obj$event_correction))
+                                                                 node_id2 = node_id))
     
     prev <- node_id
   }

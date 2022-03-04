@@ -66,7 +66,7 @@ edge_int <- EdgeIntensity(intnet, 'V1', 'V9')
 int_path <- PathIntensity(intnet, short_dist$path)
 
 # All intensities
-intnet_all <- CalculateEventIntensities(intnet)
+intnet_all <- RelateEventsToNetwork(intnet)
 g <- intnet_all$graph
 igraph::edge_attr_names(g)
 igraph::vertex_attr_names(g)
@@ -189,7 +189,7 @@ PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = short_dist$path)
 #-------------------------------------------SUB-NETWORK--------------------------------------------
 intnet_und <- intensitynet(castellon, nodes, crimes)
 intnet_und_reduced <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_coords = c(4429500, 4431500))
-intnet_und_reduced <- CalculateEventIntensities(intnet_und_reduced)
+intnet_und_reduced <- RelateEventsToNetwork(intnet_und_reduced)
 
 PlotHeatmap(intnet_und_reduced)
 PlotHeatmap(intnet_und_reduced, heattype = 'v_intensity')
