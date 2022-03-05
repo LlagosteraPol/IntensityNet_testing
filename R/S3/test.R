@@ -585,8 +585,11 @@ dist_mtx <- CalculateDistancesMtx(node_coords_obj)
 und_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                node_coords = chicago_node_coords, 
                                event_data = chicago_df)
-und_intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 
+start_time <- Sys.time()
+und_intnet_chicago_old2 <- RelateEventsToNetwork(und_intnet_chicago)
+end_time <- Sys.time()
+print(end_time - start_time)
 
 g <- und_intnet_chicago$graph
 gen_corr <- NodeGeneralCorrelation(und_intnet_chicago, dep_type = 'correlation', lag_max = 2, 

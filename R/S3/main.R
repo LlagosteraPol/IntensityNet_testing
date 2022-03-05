@@ -2,11 +2,12 @@
 # require(igraph)
 # require(intergraph)
 # require(ggplot2)
-#require(roxygen2)
+# require(roxygen2)
 # require(sna)
 # require(spatstat)
 # require(spdep)
 # require(viridis)
+# require(proxy)
 
 source("./intensitynetDir.R", local = TRUE)
 source("./intensitynetMix.R", local = TRUE)
@@ -417,12 +418,30 @@ EdgeIntensitiesAndProportions.intensitynet <- function(obj){
   
   g <- obj$graph
   distances_mtx <- obj$distances_mtx
+  early_discard_distance <- max(distances_mtx)/2 + z # Set up a limit for an early discard max distance
   event_data <- obj$events
   edge_list <- igraph::ends(g, igraph::E(g), names=FALSE)
   
   if(length(event_data) == 0){
     return(NA)
   }
+  
+  
+  # Create a matrix of distances (medge_event_dist) from each event to each middle point
+  # This matrix will be used later to an early event discartion to reduce the computation time
+  from_coords <- igraph::vertex_attr(graph = g, name = "xcoord", index = edge_list[,1])
+  from_coords <- cbind(from_coords, igraph::vertex_attr(graph = g, name = "ycoord", index = edge_list[,1]))
+  
+  to_coords <- igraph::vertex_attr(graph = g, name = "xcoord", index = edge_list[,2])
+  to_coords <- cbind(to_coords, igraph::vertex_attr(graph = g, name = "ycoord", index = edge_list[,2]))
+  
+  # Coordinates of the middle point of all edges (vectors)
+  edge_mid <- matrix(c( (from_coords[,1] + to_coords[,1]) / 2, (from_coords[,2] + to_coords[,2]) / 2), ncol = 2)
+  
+  # Distances from each event to each middle point
+  medge_event_dist <- proxy::dist(x = as.matrix(event_data[,1:2]), y = edge_mid, method = 'euclidean' )
+  medge_event_dist <- `dim<-`(c(medge_event_dist), dim(medge_event_dist))
+  
   
   # Prepare structure to set information in the edges
   edge_events <- data.frame(from = edge_list[,1], 
@@ -463,12 +482,17 @@ EdgeIntensitiesAndProportions.intensitynet <- function(obj){
           next
         }
       }
+      
+      # Early event discartion
+      if(medge_event_dist[row, edge_row] > early_discard_distance){
+        next
+      }
       # Faster but only works if the node ID is the same as its index
       node1 <- node_coords[edge_events[edge_row, 'from'],][2:3]
       node2 <- node_coords[edge_events[edge_row, 'to'],][2:3]
       
       ep <- event_data[row, ]
-      dist_obj <- list(p1 = node1, p2 = node2, ep = ep)
+      dist_obj <- list(p1 = node1, p2 = node2, ep = ep[,1:2])
       class(dist_obj) <- 'netTools'
       d <- PointToSegment(dist_obj)
       
@@ -489,11 +513,13 @@ EdgeIntensitiesAndProportions.intensitynet <- function(obj){
       edge_events[tmp_edge, 'n_events'] <- edge_events[tmp_edge, 'n_events'] + 1
       
       if(ncol(ep) > 2){
-        for(i_col in 5:ncol(ep)){
+        for(i_col in 3:ncol(ep)){
           if( is.numeric(ep[,i_col]) ){
-            edge_events[tmp_edge, i_col] <- edge_events[tmp_edge, colnames(ep[i_col])] + ep[,i_col]
+            tmp_str <- colnames(ep[i_col])
+            edge_events[tmp_edge, tmp_str] <- edge_events[tmp_edge, tmp_str] + ep[,i_col]
           }else{
-            edge_events[tmp_edge, as.character(ep[,i_col])] <- edge_events[tmp_edge, as.character(ep[,i_col])] + 1
+            tmp_str <-  as.character(ep[,i_col])
+            edge_events[tmp_edge, tmp_str] <- edge_events[tmp_edge, tmp_str] + 1
           }
         }
       }

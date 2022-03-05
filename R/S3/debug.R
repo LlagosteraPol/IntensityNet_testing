@@ -1,45 +1,17 @@
-library(intensitynet)
-library(spatstat)
-data(chicago)
-chicago_df <- as.data.frame(chicago[["data"]]) # Get as dataframe the data from Chicago
-
-# Get the adjacency matrix. One way is to create an igraph object from the edge coordinates.
-edges <- cbind(chicago[["domain"]][["from"]], chicago[["domain"]][["to"]])
-chicago_net <- igraph::graph_from_edgelist(edges)
-
-# And then use the igraph function 'as_adjacency_matrix'
-chicago_adj_mtx <- as.matrix(igraph::as_adjacency_matrix(chicago_net))
-chicago_node_coords <- data.frame(xcoord = chicago[["domain"]][["vertices"]][["x"]], 
-                                  ycoord = chicago[["domain"]][["vertices"]][["y"]])
-
-# Create a dataframe with the coordinates of the events 'assault'
-chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
-assault_coordinates <- data.frame(xcoord = chicago_assault[,1],
-                                  ycoord = chicago_assault[,2])
-
-# Create the intensitynet object, in this case will be undirected 
-intnet_chicago <- intensitynet(chicago_adj_mtx, 
-                               node_coords = chicago_node_coords, 
-                               event_coords = assault_coordinates)
-
-intnet_chicago <- CalculateEventIntensities(intnet_chicago)
-
-data_moran <- NodeLocalCorrelation(intnet_chicago, dep_type = 'moran', intensity = igraph::vertex_attr(intnet_chicago$graph)$intensity)
-moran_i <- data_moran$correlation
-intnet_chicago <- data_moran$intnet
-
-PlotHeatmap(intnet_chicago, show_events = TRUE)
-
-PlotHeatmap(intnet_chicago, heattype = 'e_intensity', show_events = TRUE)
-
-PlotHeatmap(intnet_chicago, heattype = 'moran', show_events = TRUE)
-
-PlotHeatmap(intnet_chicago, heattype = 'geary', show_events = TRUE)
-
-plot(intnet_chicago, enable_grid = TRUE, show_events = TRUE)
 
 
 
-pdf("tmp.pdf",height=8,width=8)
-plot(intnet_chicago, enable_grid = TRUE, show_events = TRUE)
-dev.off()
+ep <- matrix(c(639.1747, 1190.523), nrow=1)
+p1 <- rbind(c(0.3894739,    1253.8027), c(109.6830137,	1251.7715), c(109.6830137,	1251.7715))
+p2 <- rbind(c(109.6830137,	1251.7715), c(111.1897363,	1276.5601), c(197.9987626,	1251.1532))
+
+res1 <- matrix()
+for(i in 1:nrow(p1)){
+  dist_obj1 <- list(p1 = p1[i,], p2 = p2[i,], ep = ep)
+  class(dist_obj1) <- 'netTools'
+  res1<- rbind(res1, PointToSegments(dist_obj1))
+}
+
+dist_obj2 <- list(p1 = p1, p2 = p2, ep = ep)
+class(dist_obj2) <- 'netTools'
+res2 <- PointToSegment(dist_obj2)
