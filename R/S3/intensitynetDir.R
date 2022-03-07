@@ -52,8 +52,7 @@ MeanNodeIntensity.intensitynetDir= function(obj, node_id){
         out_mat[as.character(node_id), 
                 as.character(neighbor_id)] <- EdgeIntensity(obj = obj, 
                                                             node_id1 = igraph::V(g)[node_id]$name, 
-                                                            node_id2 = igraph::V(g)[neighbor_id]$name,
-                                                            z = obj$event_correction)
+                                                            node_id2 = igraph::V(g)[neighbor_id]$name)
       }
       
       out_intensity <- Reduce('+', out_mat) / length(out_neighbors)

@@ -618,7 +618,7 @@ short_path_int <- ShortestPathIntensity(und_intnet_chicago, node_id1 = 'V1', nod
 #-------DIRECTED:
 dir_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                    node_coords = chicago_node_coords, 
-                                   event_data = assault_coordinates,
+                                   event_data = chicago_df,
                                    graph_type='directed')
 dir_intnet_chicago <- RelateEventsToNetwork(dir_intnet_chicago)
 
@@ -637,7 +637,7 @@ intnet <- data_geary$intnet
 #-------MIXED:
 mix_intnet_chicago <- intensitynet(chicago_adj_mtx, 
                                    node_coords = chicago_node_coords, 
-                                   event_data = assault_coordinates,
+                                   event_data = chicago_df,
                                    graph_type='mixed')
 mix_intnet_chicago <- RelateEventsToNetwork(mix_intnet_chicago)
 
