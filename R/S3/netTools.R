@@ -659,11 +659,11 @@ PointToSegment <- function(obj) {
   
   xx <- ifelse(param < 0, p1[,1], ifelse(param > 1, p2[,1], p1[,1] + param * C))
   yy <- ifelse(param < 0, p1[,2], ifelse(param > 1, p2[,2], p1[,2] + param * D))
-
+  
   
   dx <- ep[,1] - xx
   dy <- ep[,2] - yy
-
+  
   return(sqrt(dx * dx + dy * dy))
 }
 

@@ -75,6 +75,7 @@ MeanNodeIntensity.intensitynetDir= function(obj, node_id){
 #' @return proper intensitynetDir object with a graph containing the nodewise intensity in the node 
 #' attributes and the edgewise intensities and event covariate proportions as edge attributes.
 #' 
+#' @export
 RelateEventsToNetwork.intensitynetDir = function(obj){
   g <- obj$graph
   intensities <- obj$intensities
@@ -128,7 +129,7 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
   
   # g <- g %>% igraph::set_vertex_attr(name = "intensity_in", value = as.matrix(in_counts)) %>% 
   #            igraph::set_vertex_attr(name = "intensity_out", value = as.matrix(out_counts))
-  g <- igraph::set_vertex_attr(g, name = "intensity_all", value = as.matrix(in_counts))
+  g <- igraph::set_vertex_attr(g, name = "intensity_in", value = as.matrix(in_counts))
   g <- igraph::set_vertex_attr(g, name = "intensity_out", value = as.matrix(out_counts))
   
   intnet <- list(graph = g, 

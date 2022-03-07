@@ -14,9 +14,6 @@ source("./intensitynetMix.R", local = TRUE)
 source("./intensitynetUnd.R", local = TRUE)
 source("./netTools.R", local = TRUE)
 
-
-
-
 #' Constructor of the class intensitynet. In order to create an intensitynet object, it is needed; an adjacency matrix, the
 #' coordinates of the nodes and the coordinates of the events.
 #'
@@ -498,7 +495,7 @@ EdgeIntensitiesAndProportions.intensitynet <- function(obj){
   if(e_count == nrow(event_data)){
     return(obj)
   } 
-
+  
   #Calculate intensity and proportions
   for (edge_row in 1:nrow(edge_events)) {
     if(edge_events[edge_row, 'n_events'] > 0 ){

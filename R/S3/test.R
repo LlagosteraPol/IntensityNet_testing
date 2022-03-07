@@ -591,21 +591,37 @@ und_intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 end_time <- Sys.time()
 print(end_time - start_time)
 
-g <- und_intnet_chicago$graph
-gen_corr <- NodeGeneralCorrelation(und_intnet_chicago, dep_type = 'correlation', lag_max = 2, 
+g <- und_intnet_chicago$grap
+
+gen_cov <- NodeGeneralCorrelation(und_intnet_chicago, 
+                                  dep_type = 'covariance', 
+                                  lag_max = 2, 
+                                  intensity = igraph::vertex_attr(g)$intensity)
+
+
+gen_corr <- NodeGeneralCorrelation(und_intnet_chicago, 
+                                   dep_type = 'correlation', 
+                                   lag_max = 2, 
                                    intensity = igraph::vertex_attr(g)$intensity)
 
 data_moran <- NodeLocalCorrelation(und_intnet_chicago, 
                                    dep_type = 'moran', 
                                    intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
 moran_i <- data_moran$correlation
-intnet <- data_moran$intnet
+intnet_mi <- data_moran$intnet
 
 data_geary <- NodeLocalCorrelation(und_intnet_chicago, 
                                    dep_type = 'geary', 
                                    intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
 geary <- data_geary$correlation
-intnet <- data_geary$intnet
+intnet_gy <- data_geary$intnet
+
+
+data_getis <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'getis', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+getis <- data_getis$correlation
+intnet_gs <- data_getis$intnet
 
 chicago_g <- und_intnet_chicago$graph
 
@@ -621,6 +637,12 @@ dir_intnet_chicago <- intensitynet(chicago_adj_mtx,
                                    event_data = chicago_df,
                                    graph_type='directed')
 dir_intnet_chicago <- RelateEventsToNetwork(dir_intnet_chicago)
+
+gen_cov <- NodeGeneralCorrelation(dir_intnet_chicago, 
+                                  dep_type = 'covariance', 
+                                  lag_max = 2, 
+                                  intensity = igraph::vertex_attr(dir_intnet_chicago$graph)$intensity_in)
+
 
 data_moran <- NodeLocalCorrelation(dir_intnet_chicago, 
                                    dep_type = 'moran_i', 
