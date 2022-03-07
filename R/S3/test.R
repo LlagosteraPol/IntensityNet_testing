@@ -587,7 +587,7 @@ und_intnet_chicago <- intensitynet(chicago_adj_mtx,
                                event_data = chicago_df)
 
 start_time <- Sys.time()
-und_intnet_chicago_old2 <- RelateEventsToNetwork(und_intnet_chicago)
+und_intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 end_time <- Sys.time()
 print(end_time - start_time)
 

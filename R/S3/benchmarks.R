@@ -66,7 +66,11 @@ edge_int <- EdgeIntensity(intnet, 'V1', 'V9')
 int_path <- PathIntensity(intnet, short_dist$path)
 
 # All intensities
+start_time <- Sys.time()
 intnet_all <- RelateEventsToNetwork(intnet)
+end_time <- Sys.time()
+print(end_time - start_time)
+
 g <- intnet_all$graph
 igraph::edge_attr_names(g)
 igraph::vertex_attr_names(g)

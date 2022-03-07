@@ -467,3 +467,181 @@ AllEdgeIntensities.intensitynet <- function(obj, z = 5){
                       name = 'intensity', 
                       value = as.matrix(edge_events[, 'intensity']))
 }
+
+
+
+# 07/03/22
+
+#' Calculate all the edge intensities of the graph. It's more fast than using iteratively the 
+#' function EdgeIntensity for all edges.
+#' 
+#' @name EdgeIntensitiesAndProportions.intensitynet
+#' 
+#' @param obj intensitynet object
+#' 
+#' @return intensitynet class object where the graph contains all the edge intensities as an attribute
+#' 
+EdgeIntensitiesAndProportions.intensitynet <- function(obj){
+  if(obj$event_correction < 0){
+    message("Warning: event correction value cannot be less than 0, using default.")
+    z <- 5
+  }
+  else{
+    z <- obj$event_correction
+  }
+  
+  g <- obj$graph
+  distances_mtx <- obj$distances_mtx
+  early_discard_distance <- max(distances_mtx)/2 + z # Set up a limit for an early discard max distance
+  event_data <- obj$events
+  edge_list <- igraph::ends(g, igraph::E(g), names=FALSE)
+  
+  if(length(event_data) == 0){
+    return(NA)
+  }
+  
+  
+  # Create a matrix of distances (medge_event_dist) from each event to each middle point
+  # This matrix will be used later to an early event discartion to reduce the computation time
+  from_coords <- igraph::vertex_attr(graph = g, name = "xcoord", index = edge_list[,1])
+  from_coords <- cbind(from_coords, igraph::vertex_attr(graph = g, name = "ycoord", index = edge_list[,1]))
+  
+  to_coords <- igraph::vertex_attr(graph = g, name = "xcoord", index = edge_list[,2])
+  to_coords <- cbind(to_coords, igraph::vertex_attr(graph = g, name = "ycoord", index = edge_list[,2]))
+  
+  # Coordinates of the middle point of all edges (vectors)
+  edge_mid <- matrix(c( (from_coords[,1] + to_coords[,1]) / 2, (from_coords[,2] + to_coords[,2]) / 2), ncol = 2)
+  
+  # Distances from each event to each middle point
+  medge_event_dist <- proxy::dist(x = as.matrix(event_data[,1:2]), y = edge_mid, method = 'euclidean' )
+  medge_event_dist <- `dim<-`(c(medge_event_dist), dim(medge_event_dist))
+  
+  
+  # Prepare structure to set information in the edges
+  edge_events <- data.frame(from = edge_list[,1], 
+                            to = edge_list[,2],
+                            n_events = 0,
+                            intensity = 0)
+  
+  # Set up the names for the covariates of the events
+  if(ncol(event_data) > 2){
+    for(i in 3:ncol(event_data)){
+      if(is.numeric(event_data[,i])){
+        edge_events[colnames(event_data[i])] <- 0 # Set event column name
+      }else{
+        edge_events[as.character(unique(event_data[[i]]))] <- 0 # Set event unique variables as names
+      }
+    }
+  }
+  
+  node_coords <- as.numeric(igraph::V(g))
+  node_coords <- cbind(node_coords, igraph::vertex_attr(g, "xcoord"))
+  node_coords <- cbind(node_coords, igraph::vertex_attr(g, "ycoord"))
+  colnames(node_coords) <- c('node', 'xcoord', 'ycoord')
+  
+  #start_time <- Sys.time() # debug only
+  pb = utils::txtProgressBar(min = 0, max = nrow(event_data), initial = 0) 
+  message("Calculating edge intensities...")
+  
+  e_count <- 0
+  for(row in 1:nrow(event_data)){
+    utils::setTxtProgressBar(pb, row)
+    tmp_edge <- NULL
+    shortest_d <- NULL
+    
+    ep <- event_data[row, ]
+    dist_obj <- list(p1 = from_coords, p2 = to_coords, ep = ep[,1:2])
+    class(dist_obj) <- 'netTools'
+    event_seg_dist <- PointToSegment(dist_obj)
+    
+    for(edge_row in 1:nrow(edge_events)){
+      
+      # Check if the intensities are already calculated
+      if(row == 1){
+        if(!is.null(igraph::edge_attr(g, 'intensity', igraph::E(g)[edge_row]))){
+          e_count <- e_count + 1
+          next
+        }
+      }
+      
+      # Early event discartion
+      if(medge_event_dist[row, edge_row] > early_discard_distance){
+        next
+      }
+      
+      # # Faster but only works if the node ID is the same as its index
+      # node1 <- node_coords[edge_events[edge_row, 'from'],][2:3]
+      # node2 <- node_coords[edge_events[edge_row, 'to'],][2:3]
+      # 
+      # ep <- event_data[row, ]
+      # dist_obj <- list(p1 = node1, p2 = node2, ep = ep[,1:2])
+      # class(dist_obj) <- 'netTools'
+      # d <- PointToSegment_deprecated(dist_obj)
+      
+      
+      d <- event_seg_dist[edge_row]
+      
+      
+      # If the event is at a distance less or equal 'z' from the edge (segment) which
+      # connects both given points (the road), then is counted as an event of that road
+      if(d <= z){
+        if(d == 0){
+          tmp_edge <- edge_row
+          break
+        }
+        if (is.null(shortest_d) || d < shortest_d){
+          tmp_edge <- edge_row
+        }
+      }
+    }
+    # Set up the information (except intensity) to the edge_event DataFrame
+    if ( !is.null(tmp_edge) ){
+      edge_events[tmp_edge, 'n_events'] <- edge_events[tmp_edge, 'n_events'] + 1
+      
+      if(ncol(ep) > 2){
+        for(i_col in 3:ncol(ep)){
+          if( is.numeric(ep[,i_col]) ){
+            tmp_str <- colnames(ep[i_col])
+            edge_events[tmp_edge, tmp_str] <- edge_events[tmp_edge, tmp_str] + ep[,i_col]
+          }else{
+            tmp_str <-  as.character(ep[,i_col])
+            edge_events[tmp_edge, tmp_str] <- edge_events[tmp_edge, tmp_str] + 1
+          }
+        }
+      }
+    }
+    # If the intensity of all edges is already calculated return the object
+    if(row == 1){
+      if(e_count == length(igraph::E(g))){
+        message("Intensities were already calculated.")
+        return(obj)
+      } 
+    }
+  }
+  close(pb)
+  #message(paste0("Time: ", Sys.time() - start_time)) # debug only
+  
+  #Calculate intensity and proportions
+  for (edge_row in 1:nrow(edge_events)) {
+    if(edge_events[edge_row, 'n_events'] > 0 ){
+      # Distance between the node and its neighbor
+      edge_dist <- abs(distances_mtx[edge_events[edge_row, 'from'], edge_events[edge_row, 'to']])
+      edge_events[edge_row, 'intensity'] <-  edge_events[edge_row, 'n_events'] / edge_dist
+      
+      if(ncol(edge_events) > 4){
+        for(i_col in 5:ncol(edge_events)){
+          edge_events[edge_row, i_col] <- edge_events[edge_row, i_col] / edge_events[edge_row, 'n_events'] 
+        }
+      }
+    }
+  }
+  
+  # Save information from 'edge_events' to the edge attributes of the network
+  for(i_col in 3:ncol(edge_events)){
+    obj <- SetNetworkAttribute(obj = obj, 
+                               where = 'edge', 
+                               name = colnames(edge_events[i_col]), 
+                               value = as.matrix(edge_events[, i_col]))
+  }
+  return(obj)
+}

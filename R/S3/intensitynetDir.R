@@ -17,6 +17,7 @@ MeanNodeIntensity.intensitynetDir= function(obj, node_id){
     if(!is.na(igraph::vertex_attr(g, "intensity_in", index = node_id))[1] &
        !is.na(igraph::vertex_attr(g, "intensity_out", index = node_id))[1]) {
       
+      message("Warning: Node intensities were already calculated in a previous instance, returning the same intensity.")
       return( list(in_int  = igraph::vertex_attr(g, 'intensity_in', index=node_id),
                    out_int = igraph::vertex_attr(g, 'intensity_out', index=node_id)))
     }
@@ -92,6 +93,7 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
   pb = utils::txtProgressBar(min = 0, max = igraph::gorder(g), initial = 0) 
   message("Calculating node intensities...")
   # check if the intensities was previously calculated, if not, calculate them
+  v_count <- 0
   for(node_id in igraph::V(g)){
     utils::setTxtProgressBar(pb,node_id)
     
@@ -113,11 +115,17 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
       if(is.na(igraph::vertex_attr(g, 'intensity_out', node_id))[1]) out_counts[[node_id]] <- 0
       
     }else{
+      v_count <- v_count + 1
       in_counts[[node_id]]  <- igraph::vertex_attr(g, 'intensity_in', node_id)
       out_counts[[node_id]] <- igraph::vertex_attr(g, 'intensity_out', node_id)
     }
   }
   close(pb)
+  # If the intensity of all edges is already calculated return the object
+  if(v_count == length(igraph::V(g))){
+    message("Warning: Intensities were already calculated in a previous instance, returning the same object.")
+    return(obj)
+  } 
   
   # g <- g %>% igraph::set_vertex_attr(name = "intensity_in", value = as.matrix(in_counts)) %>% 
   #            igraph::set_vertex_attr(name = "intensity_out", value = as.matrix(out_counts))
