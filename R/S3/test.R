@@ -591,7 +591,7 @@ und_intnet_chicago <- RelateEventsToNetwork(und_intnet_chicago)
 end_time <- Sys.time()
 print(end_time - start_time)
 
-g <- und_intnet_chicago$grap
+g <- und_intnet_chicago$graph
 
 gen_cov <- NodeGeneralCorrelation(und_intnet_chicago, 
                                   dep_type = 'covariance', 
