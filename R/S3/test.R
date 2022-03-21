@@ -625,7 +625,7 @@ intnet_gs <- data_getis$intnet
 
 chicago_g <- und_intnet_chicago$graph
 
-short_path_int <- ShortestPath(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300', weight = 'intensity')
+short_path_und <- ShortestPath(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300', weight = 'intensity')
 
 
 
@@ -655,6 +655,8 @@ data_geary <- NodeLocalCorrelation(dir_intnet_chicago,
                                    intensity = igraph::vertex_attr(dir_intnet_chicago$graph)$intensity_in)
 geary <- data_geary$correlation
 intnet <- data_geary$intnet
+
+short_path_dir <- ShortestPath(dir_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300', weight = 'intensity')
 
 #-------MIXED:
 mix_intnet_chicago <- intensitynet(chicago_adj_mtx, 

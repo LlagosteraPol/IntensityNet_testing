@@ -120,11 +120,11 @@ if(intnet_all$graph_type == 'undirected'){
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_moran_gplot.pdf")
-  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heattype = 'moran_i')
+  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heat_type = 'moran_i')
   dev.off()
   
   pdf("Plots/area_with_grid_Dir_g_gplot.pdf")
-  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heattype = 'geary')
+  gplot(intnet_all, intensity = igraph::vertex_attr(intnet_all$graph)$intensity_in, heat_type = 'geary')
   dev.off()
   
   for(node_id in igraph::V(g)){
@@ -181,14 +181,14 @@ dev.off()
 plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
 
 PlotHeatmap(intnet_all)
-PlotHeatmap(intnet_all, heattype = 'moran_i')
-PlotHeatmap(intnet_all, heattype = 'geary')
-PlotHeatmap(intnet_all, heattype = 'v_intensity')
-PlotHeatmap(intnet_all, heattype = 'e_intensity')
-PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = igraph::V(g)[1:100])
+PlotHeatmap(intnet_all, heat_type = 'moran_i')
+PlotHeatmap(intnet_all, heat_type = 'geary')
+PlotHeatmap(intnet_all, heat_type = 'v_intensity')
+PlotHeatmap(intnet_all, heat_type = 'e_intensity')
+PlotHeatmap(intnet_all, heat_type = 'intensity', net_vertices = igraph::V(g)[1:100])
 
 short_dist <- ShortestNodeDistance(intnet, node_id1 = 'V1', node_id2 = 'V1501')
-PlotHeatmap(intnet_all, heattype = 'intensity', net_vertices = short_dist$path)
+PlotHeatmap(intnet_all, heat_type = 'intensity', net_vertices = short_dist$path)
 
 #-------------------------------------------SUB-NETWORK--------------------------------------------
 intnet_und <- intensitynet(castellon, nodes, crimes)
@@ -196,5 +196,5 @@ intnet_und_reduced <- ApplyWindow(intnet_und, x_coords = c(752500, 754500), y_co
 intnet_und_reduced <- RelateEventsToNetwork(intnet_und_reduced)
 
 PlotHeatmap(intnet_und_reduced)
-PlotHeatmap(intnet_und_reduced, heattype = 'v_intensity')
+PlotHeatmap(intnet_und_reduced, heat_type = 'v_intensity')
 
