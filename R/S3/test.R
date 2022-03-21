@@ -625,7 +625,7 @@ intnet_gs <- data_getis$intnet
 
 chicago_g <- und_intnet_chicago$graph
 
-short_path_int <- ShortestPathIntensity(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300')
+short_path_int <- ShortestPath(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300', weight = 'intensity')
 
 
 

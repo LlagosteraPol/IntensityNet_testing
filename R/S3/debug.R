@@ -1,17 +1,24 @@
 
 
 
-ep <- matrix(c(639.1747, 1190.523), nrow=1)
-p1 <- rbind(c(0.3894739,    1253.8027), c(109.6830137,	1251.7715), c(109.6830137,	1251.7715))
-p2 <- rbind(c(109.6830137,	1251.7715), c(111.1897363,	1276.5601), c(197.9987626,	1251.1532))
 
-res1 <- matrix()
-for(i in 1:nrow(p1)){
-  dist_obj1 <- list(p1 = p1[i,], p2 = p2[i,], ep = ep)
-  class(dist_obj1) <- 'netTools'
-  res1<- rbind(res1, PointToSegments(dist_obj1))
+g <- und_intnet_chicago$graph
+weight <- 'intensity'
+node_id1 <- 'V115'
+node_id2 <- 'V134'
+
+if(!is.na(weight) && !(weight %in% igraph::edge_attr_names(g))){
+  warning("The given weight doens't exist in the edge attributes, using default instead (NA)")
+  weight = NA
 }
 
-dist_obj2 <- list(p1 = p1, p2 = p2, ep = ep)
-class(dist_obj2) <- 'netTools'
-res2 <- PointToSegment(dist_obj2)
+if (is.na(weight)){
+  path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
+}else{
+  weight_vector <- igraph::edge_attr(g)[[weight]]
+  path_data <- igraph::shortest_paths(graph = g, from = node_id1, to = node_id2, mode = 'all', weights = weight_vector, output = 'both')
+  total_weight <- sum(igraph::edge_attr(graph = g, weight, index = igraph::E(g, path = unlist(path_data$vpath))))
+}
+
+#igraph::distances(graph = und_intnet_chicago$graph, v = node_id1, to = node_id2, weights = 'weight')
+ret <- list(total_weight = total_weight, path = path_data$vpath)

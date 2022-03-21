@@ -51,7 +51,7 @@ dist_mtx_test <- intnet$distances
 
 # SHORTEST DISTANCE
 short_dist <- ShortestNodeDistance(intnet, node_id1 = 'V101', node_id2 = 'V701')
-short_path_int <- ShortestPathIntensity(intnet, node_id1 = 'V101', node_id2 = 'V701')
+short_path <- ShortestPath(intnet, node_id1 = 'V101', node_id2 = 'V701')
 
 # GEORREFERENCED PLOT
 plot(intnet)
