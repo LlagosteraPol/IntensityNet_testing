@@ -1072,7 +1072,8 @@ ApplyWindow.intensitynet <- function(obj, x_coords, y_coords){
   intnet <- list(graph = sub_g, 
                  events = sub_e_coords, 
                  graph_type = obj$graph_type, 
-                 distances_mtx = sub_dist_mtx)
+                 distances_mtx = sub_dist_mtx,
+                 event_correction = obj$event_correction)
   attr(intnet, 'class') <- class(obj)
   
   intnet
