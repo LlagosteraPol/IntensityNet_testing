@@ -1,24 +1,38 @@
 
 
+# Event (crime coordinates)
+
+# Adjacency matrix (undirected): Segmenting locations of the traffic network treated as the vertex set of the network.
+castellon <- read.table("../../Data/castellon.txt", header=TRUE, row.names=1) # says first column are rownames
+
+# Node coordinates: Georeferenced coordinates from 'castellon' nodes
+nodes <- read.table("../../Data/nodes.txt", header=TRUE, row.names=1) # says first column are rownames
+
+crimes <- read.table("../../Data/crimes_corrected.txt", header=TRUE, row.names=1) 
 
 
-g <- und_intnet_chicago$graph
-weight <- 'intensity'
-node_id1 <- 'V115'
-node_id2 <- 'V134'
+# cast_node_coords_int <- cbind(as.numeric(sub(",", ".", c(cast_node_coords[[1]]))),
+#                               as.numeric(sub(",", ".", c(cast_node_coords[[2]]))))
 
-if(!is.na(weight) && !(weight %in% igraph::edge_attr_names(g))){
-  warning("The given weight doens't exist in the edge attributes, using default instead (NA)")
-  weight = NA
-}
+intnet_cast2 <- intensitynet(castellon,
+                             node_coords = nodes,
+                             event_data = crimes,
+                             event_correction = 100)
 
-if (is.na(weight)){
-  path <- unlist(igraph::get.shortest.paths(g, node_id1, node_id2)$vpath)
-}else{
-  weight_vector <- igraph::edge_attr(g)[[weight]]
-  path_data <- igraph::shortest_paths(graph = g, from = node_id1, to = node_id2, mode = 'all', weights = weight_vector, output = 'both')
-  total_weight <- sum(igraph::edge_attr(graph = g, weight, index = igraph::E(g, path = unlist(path_data$vpath))))
-}
 
-#igraph::distances(graph = und_intnet_chicago$graph, v = node_id1, to = node_id2, weights = 'weight')
-ret <- list(total_weight = total_weight, path = path_data$vpath)
+# Calculate nodewise and edgewise intensities and mark proportions
+intnet_cast2 <- RelateEventsToNetwork(intnet_cast2)
+
+
+edge_data2<- as.data.frame(igraph::edge_attr(intnet_cast2$graph))
+
+dim(edge_data2[edge_data2$n_events==0,])
+
+dim(edge_data2[edge_data2$n_events>0,])
+
+node_data2 <- as.data.frame(igraph::vertex_attr(intnet_cast2$graph))
+
+
+PlotHeatmap(intnet_cast2, heat_type='geary')
+
+ShortestPath(intnet_cast2, 'V1', 'V50')
