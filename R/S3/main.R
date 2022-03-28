@@ -643,7 +643,11 @@ ShortestPath.intensitynet <- function(obj,  node_id1, node_id2, weight = NA, mod
 NodeGeneralCorrelation.intensitynet <- function(obj, dep_type, lag_max, intensity){
   g <- obj$graph
   g_sna <- intergraph::asNetwork(g)
-  sna::nacf(g_sna, intensity, type = dep_type, mode = "graph", lag.max = lag_max)
+  
+  if(obj$graph_type == 'undirected') m <- 'graph'
+  else m <- 'digraph'
+  
+  sna::nacf(g_sna, intensity, type = dep_type, mode = m, lag.max = lag_max)
 }
 
 
