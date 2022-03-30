@@ -668,9 +668,9 @@ mix_intnet_chicago <- RelateEventsToNetwork(mix_intnet_chicago)
 #--------------------------------------Plot Chicago events-------------------------------------------
 PlotNeighborhood(und_intnet_chicago, node_id = 'V300')
 
-PlotHeatmap(und_intnet_chicago, heattype='moran', show_events = TRUE)
-PlotHeatmap(und_intnet_chicago, heattype='geary')
-PlotHeatmap(und_intnet_chicago, heattype='intensity')
+PlotHeatmap(und_intnet_chicago, heat_type='moran', show_events = TRUE)
+PlotHeatmap(und_intnet_chicago, heat_type='geary')
+PlotHeatmap(und_intnet_chicago, heat_type='intensity')
 
 chicago_edge_coords <- data.frame(xcoord1 = chicago[["domain"]][["lines"]][["ends"]][["x0"]],
                                   ycoord1 = chicago[["domain"]][["lines"]][["ends"]][["y0"]],
