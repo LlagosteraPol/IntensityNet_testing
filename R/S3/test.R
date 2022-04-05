@@ -746,13 +746,13 @@ robbery_intnet <- intensitynet(chicago_adj_mtx,
 robbery_intnet <- RelateEventsToNetwork(robbery_intnet)
 
 
-theft_intensity <- igraph::edge_attr(theft_intnet$graph, 'intensity')
-damage_intensity <- igraph::edge_attr(damage_intnet$graph, 'intensity')
-assault_intensity <- igraph::edge_attr(assault_intnet$graph, 'intensity')
-trespass_intensity <- igraph::edge_attr(trespass_intnet$graph, 'intensity')
-burglary_intensity <- igraph::edge_attr(burglary_intnet$graph, 'intensity')
-cartheft_intensity <- igraph::edge_attr(cartheft_intnet$graph, 'intensity')
-robbery_intensity <- igraph::edge_attr(robbery_intnet$graph, 'intensity')
+theft_intensity <- igraph::vertex_attr(theft_intnet$graph, 'intensity')
+damage_intensity <- igraph::vertex_attr(damage_intnet$graph, 'intensity')
+assault_intensity <- igraph::vertex_attr(assault_intnet$graph, 'intensity')
+trespass_intensity <- igraph::vertex_attr(trespass_intnet$graph, 'intensity')
+burglary_intensity <- igraph::vertex_attr(burglary_intnet$graph, 'intensity')
+cartheft_intensity <- igraph::vertex_attr(cartheft_intnet$graph, 'intensity')
+robbery_intensity <- igraph::vertex_attr(robbery_intnet$graph, 'intensity')
 
 cov(theft_intensity, damage_intensity)
 cor(theft_intensity, damage_intensity)
