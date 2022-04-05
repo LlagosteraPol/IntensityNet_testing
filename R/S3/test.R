@@ -694,6 +694,68 @@ sub_intnet_chicago <- ApplyWindow(dir_intnet_chicago,
                                   y_coords = c(500, 1000))
 PlotHeatmap(sub_intnet_chicago, heattype='geary')
 
+#------------------------------------------------COVARIANCE---------------------------------------------
+# Create a dataframe with the coordinates of the events 'assault'
+chicago_theft <- chicago_df[chicago_df$marks == 'theft',]
+
+theft_intnet <- intensitynet(chicago_adj_mtx, 
+                             node_coords = chicago_node_coords, 
+                             event_data = chicago_theft)
+theft_intnet <- RelateEventsToNetwork(theft_intnet)
+
+
+chicago_damage <- chicago_df[chicago_df$marks == 'damage',]
+damage_intnet <- intensitynet(chicago_adj_mtx, 
+                              node_coords = chicago_node_coords, 
+                              event_data = chicago_damage)
+damage_intnet <- RelateEventsToNetwork(damage_intnet)
+
+
+chicago_assault <- chicago_df[chicago_df$marks == 'assault',]
+assault_intnet <- intensitynet(chicago_adj_mtx, 
+                              node_coords = chicago_node_coords, 
+                              event_data = chicago_assault)
+assault_intnet <- RelateEventsToNetwork(assault_intnet)
+
+
+chicago_trespass <- chicago_df[chicago_df$marks == 'trespass',]
+trespass_intnet <- intensitynet(chicago_adj_mtx, 
+                               node_coords = chicago_node_coords, 
+                               event_data = chicago_trespass)
+trespass_intnet <- RelateEventsToNetwork(trespass_intnet)
+
+
+chicago_burglary <- chicago_df[chicago_df$marks == 'burglary',]
+burglary_intnet <- intensitynet(chicago_adj_mtx, 
+                                node_coords = chicago_node_coords, 
+                                event_data = chicago_burglary)
+burglary_intnet <- RelateEventsToNetwork(burglary_intnet)
+
+
+chicago_cartheft <- chicago_df[chicago_df$marks == 'cartheft',]
+cartheft_intnet <- intensitynet(chicago_adj_mtx, 
+                                node_coords = chicago_node_coords, 
+                                event_data = chicago_cartheft)
+cartheft_intnet <- RelateEventsToNetwork(cartheft_intnet)
+
+
+chicago_robbery <- chicago_df[chicago_df$marks == 'robbery',]
+robbery_intnet <- intensitynet(chicago_adj_mtx, 
+                                node_coords = chicago_node_coords, 
+                                event_data = chicago_robbery)
+robbery_intnet <- RelateEventsToNetwork(robbery_intnet)
+
+
+theft_intensity <- igraph::edge_attr(theft_intnet$graph, 'intensity')
+damage_intensity <- igraph::edge_attr(damage_intnet$graph, 'intensity')
+assault_intensity <- igraph::edge_attr(assault_intnet$graph, 'intensity')
+trespass_intensity <- igraph::edge_attr(trespass_intnet$graph, 'intensity')
+burglary_intensity <- igraph::edge_attr(burglary_intnet$graph, 'intensity')
+cartheft_intensity <- igraph::edge_attr(cartheft_intnet$graph, 'intensity')
+robbery_intensity <- igraph::edge_attr(robbery_intnet$graph, 'intensity')
+
+cov(theft_intensity, damage_intensity)
+cor(theft_intensity, damage_intensity)
 
 #-----------------------------------------TESTING WINDOW SUB_GRAPH--------------------------------------
 
