@@ -92,7 +92,7 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
   
   message("\nCalculating node intensities...")
   pb = utils::txtProgressBar(min = 0, max = igraph::gorder(g), initial = 0, style = 3) 
- 
+  
   # check if the intensities was previously calculated, if not, calculate them
   v_count <- 0
   for(node_id in igraph::V(g)){

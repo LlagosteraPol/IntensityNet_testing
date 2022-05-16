@@ -193,7 +193,7 @@ NodeLocalCorrelation <- function(obj, dep_type = 'moran', intensity){
 #' }
 #' 
 #' @export
-PlotHeatmap <- function(obj, heat_type = 'none', intensity_type = 'none', net_vertices = NULL, show_events = FALSE, alpha = 1, ...){
+PlotHeatmap <- function(obj, heat_type = 'none', intensity_type = 'none', net_vertices = NULL, net_edges = NULL, show_events = FALSE, alpha = 1, ...){
   UseMethod("PlotHeatmap")
 }
 
@@ -615,7 +615,7 @@ ShortestPath.intensitynet <- function(obj,  node_id1, node_id2, weight = NA, mod
     # Remove any decimal by multiplitying with the maximum amount of possible decimals, then add 1 to remove 0 weight edges,
     # this is done to make sure that the shortest path igraph function take into account all decimals
     weight_vector <- igraph::edge_attr(g)[[weight]] * 100000000 + rep(1, igraph::gsize(g))
-
+    
     path_data <- igraph::shortest_paths(graph = g, from = node_id1, to = node_id2, mode = mode, weights = weight_vector, output = 'both')
     total_weight <- sum(igraph::edge_attr(graph = g, weight, index = path_data$vpath[[1]]))
   }
@@ -794,7 +794,7 @@ PlotHeatmap.intensitynet <- function(obj, heat_type = 'none', intensity_type = '
   } else if (!is.null(net_vertices)){
     net_vertices <- igraph::V(g)[net_vertices] # Convert to class 'igraph.v'
   }else if(class(net_edges) != 'igraph.es'){
-      net_edges <- igraph::E(g, P = net_edges) # Convert to class 'igraph.es'
+    net_edges <- igraph::E(g, P = net_edges) # Convert to class 'igraph.es'
   }
   
   # If the intensity is not provided, try to take it from the given network
