@@ -628,8 +628,12 @@ chicago_g <- und_intnet_chicago$graph
 short_path_und <- ShortestPath(und_intnet_chicago, node_id1 = 'V1', node_id2 = 'V300', weight = 'intensity')
 
 
+heat_trespass <- PlotHeatmap(und_intnet_chicago, heat_type = 'trespass')
+heat_theft <- PlotHeatmap(und_intnet_chicago, heat_type = 'theft')
 
-
+pdf("Plots/heat_mark_trespass.pdf")
+heat_trespass
+dev.off()
 
 #-------DIRECTED:
 dir_intnet_chicago <- intensitynet(chicago_adj_mtx, 
