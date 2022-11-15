@@ -95,7 +95,7 @@ if(intnet_all$graph_type == 'undirected'){
   gen_cov <- NodeGeneralCorrelation(intnet_all, dep_type = 'covariance', lag_max = 2, 
                                          intensity = igraph::vertex_attr(g)$intensity)
   
-  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran_i', intensity = igraph::vertex_attr(g)$intensity)
+  data_moran <- NodeLocalCorrelation(intnet_all, dep_type = 'moran', intensity = igraph::vertex_attr(g)$intensity)
   moran_i <- data_moran$correlation
   intnet_all <- data_moran$intnet
   
@@ -181,7 +181,7 @@ dev.off()
 plot(intnet_all, node_label = 'intensity', edge_label='none', vertex.color='red')
 
 PlotHeatmap(intnet_all)
-PlotHeatmap(intnet_all, heat_type = 'moran_i')
+PlotHeatmap(intnet_all, heat_type = 'moran')
 PlotHeatmap(intnet_all, heat_type = 'geary')
 PlotHeatmap(intnet_all, heat_type = 'v_intensity')
 PlotHeatmap(intnet_all, heat_type = 'e_intensity')

@@ -376,7 +376,7 @@ GeoreferencedGgplot2.netTools <- function(obj, ...){
     hplot <- ggplot2::ggplot(data_df, ggplot2::aes_string(x = 'xcoord', y = 'ycoord'), ...) +
       ggplot2::geom_tile(ggplot2::aes_string( fill = 'as.factor(value)' ),
                          show.legend = FALSE) +
-      ggplot2::labs( title = 'Moran-i Heatmap\n' ) +
+      ggplot2::labs( title = "Moran's I Heatmap\n" ) +
       ggplot2::scale_color_manual(values = c("gray", "green", "skyblue", "yellow", "darkorange", "red4"),
                                   name = "", breaks=c(1,2,3,4,5,6),
                                   labels = c("Not contemplated","insignificant","low-low","low-high","high-low","high-high") ) +
@@ -398,7 +398,7 @@ GeoreferencedGgplot2.netTools <- function(obj, ...){
     hplot <- ggplot2::ggplot(data_df, ggplot2::aes_string('xcoord', 'ycoord'), ...) +
       ggplot2::geom_tile( ggplot2::aes_string( fill = 'as.factor(value)' ),
                           show.legend = FALSE ) +
-      ggplot2::labs(title = 'Geary-c Heatmap\n') +
+      ggplot2::labs(title = "Geary's C Heatmap\n") +
       ggplot2::scale_color_manual(values = c("black", "green", "gray", "red"),
                                   name = "",
                                   breaks = c(1,2,3, 4),
