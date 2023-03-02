@@ -1,3 +1,6 @@
+#' Calculates the mean intensity of the given node (for mixed networks)
+#' 
+#' @description 
 #' Given a node, calculates its mean intensities depending on the edges associated with the node, those intensities are: 
 #' in, out (for directed edges), undirected and total intensity.
 #' 
@@ -9,6 +12,10 @@
 #' @return mean intensities of the given node for undirected edges, in and out directed and total intensity.
 #' 
 MeanNodeIntensity.intensitynetMix = function(obj, node_id){
+  if(!IsIntensitynet(obj)){
+    stop("Not an intensitynet object.")
+  }
+  
   g <- obj$graph
   
   # If the intensities are already calculated, return them
@@ -94,6 +101,9 @@ MeanNodeIntensity.intensitynetMix = function(obj, node_id){
 }
 
 
+#' Calculates intensity statistics for the given intensitynet object
+#' 
+#' @description 
 #' Calculates edgewise and mean nodewise intensities for Mixed networks and, for each edge, the proportions of
 #' all event covariates.
 #' 
@@ -106,6 +116,10 @@ MeanNodeIntensity.intensitynetMix = function(obj, node_id){
 #' 
 #' @export
 RelateEventsToNetwork.intensitynetMix = function(obj){
+  if(!IsIntensitynet(g)){
+    stop("Not an intensitynet object.")
+  }
+  
   g <- obj$graph
   intensities <- obj$intensities
   und_counts <- c()
@@ -114,8 +128,7 @@ RelateEventsToNetwork.intensitynetMix = function(obj){
   all_counts <- c()
   
   if(length(obj$events) == 0){
-    warning("No events, cannot calculate any intensity.")
-    return(obj)
+    stop("Error: No events, cannot calculate any intensity.")
   }
   
   tmp_obj <- EdgeIntensitiesAndProportions.intensitynet(obj)
@@ -189,6 +202,9 @@ RelateEventsToNetwork.intensitynetMix = function(obj){
 
 
 #' Plot intensitynet object
+#' 
+#' @description 
+#' Plot intensitynet object
 #'
 #' @name plot.intensitynetMix
 #'
@@ -215,6 +231,10 @@ RelateEventsToNetwork.intensitynetMix = function(obj){
 #' @export
 plot.intensitynetMix <- function(x, vertex_labels='none', edge_labels='none', 
                                  xy_axes=TRUE, enable_grid=FALSE, show_events = FALSE, path = NULL, alpha = 1, ...){
+  if(!IsIntensitynet(x)){
+    stop("Not an intensitynet object.")
+  }
+  
   g <- x$graph
   
   if(!is.null(path) && length(path) == 1){
