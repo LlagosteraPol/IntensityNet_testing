@@ -11,10 +11,6 @@
 #' @return mean intensities of the given node for in and out edges
 #' 
 MeanNodeIntensity.intensitynetDir= function(obj, node_id){
-  if(!IsIntensitynet(obj)){
-    stop("Not an intensitynet object.")
-  }
-  
   g <- obj$graph
   
   # If the intensities are already calculated, return them
@@ -87,10 +83,6 @@ MeanNodeIntensity.intensitynetDir= function(obj, node_id){
 #' 
 #' @export
 RelateEventsToNetwork.intensitynetDir = function(obj){
-  if(!IsIntensitynet(obj)){
-    stop("Not an intensitynet object.")
-  }
-  
   g <- obj$graph
   intensities <- obj$intensities
   in_counts <- c()
@@ -150,8 +142,9 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
                  events = obj$events, 
                  graph_type = obj$graph_type, 
                  distances_mtx = obj$distances_mtx,
-                 event_correction = obj$event_correction)
-  attr(intnet, 'class') <- c("intensitynet", "intensitynetDir")
+                 event_correction = obj$event_correction,
+                 events_related = TRUE)
+  attr(intnet, 'class') <- c("intensitynetDir", "intensitynet")
   return(intnet)
 }
 
@@ -186,10 +179,6 @@ RelateEventsToNetwork.intensitynetDir = function(obj){
 #' @export
 plot.intensitynetDir <- function(x, vertex_labels='none', edge_labels='none', 
                                  xy_axes=TRUE, enable_grid=FALSE, show_events = FALSE, alpha = 1, path = NULL, ...){
-  if(!IsIntensitynet(x)){
-    stop("Not an intensitynet object.")
-  }
-  
   g <- x$graph
   
   if(!is.null(path) && length(path) == 1){

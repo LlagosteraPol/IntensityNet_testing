@@ -11,10 +11,6 @@
 #' @return mean intensity of the given node
 #' 
 MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
-  if(!IsIntensitynet(obj)){
-    stop("Not an intensitynet object.")
-  }
-  
   g <- obj$graph
   
   # If the intensity is already calculated, return it
@@ -49,7 +45,7 @@ MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
 #' Calculates intensity statistics for the given intensitynet object
 #' 
 #' @description 
-#' Calculates edgewise and mean nodewise intensities for the given intensitynet object and, for each edge, the proportions of
+#' Calculates edgewise and mean nodewise intensities for Undirected networks and, for each edge, the proportions of
 #' all event covariates.
 #' 
 #' @name RelateEventsToNetwork.intensitynetUnd
@@ -61,10 +57,6 @@ MeanNodeIntensity.intensitynetUnd = function(obj, node_id){
 #' 
 #' @export
 RelateEventsToNetwork.intensitynetUnd = function(obj){
-  if(!IsIntensitynet(obj)){
-    stop("Not an intensitynet object.")
-  }
-  
   g <- obj$graph
   counts <- c()
   
@@ -114,8 +106,9 @@ RelateEventsToNetwork.intensitynetUnd = function(obj){
                  events = obj$events, 
                  graph_type = obj$graph_type, 
                  distances_mtx = obj$distances_mtx,
-                 event_correction = obj$event_correction)
-  attr(intnet, 'class') <- c("intensitynet", "intensitynetUnd")
+                 event_correction = obj$event_correction,
+                 events_related = TRUE)
+  attr(intnet, 'class') <- c("intensitynetUnd", "intensitynet")
   return(intnet)
 }
 
@@ -150,9 +143,6 @@ RelateEventsToNetwork.intensitynetUnd = function(obj){
 #' @export
 plot.intensitynetUnd <- function(x, vertex_labels = 'none', edge_labels = 'none', 
                                  xy_axes = TRUE, enable_grid = FALSE, show_events = FALSE, alpha = 1, path = NULL, ...){
-  if(!IsIntensitynet(x)){
-    stop("Not an intensitynet object.")
-  }
   g <- x$graph
   
   if(!is.null(path) && length(path) == 1){
