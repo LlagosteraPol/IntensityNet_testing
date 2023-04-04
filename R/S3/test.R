@@ -593,6 +593,25 @@ print(end_time - start_time)
 
 g <- und_intnet_chicago$graph
 
+data_moran <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'moran', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+moran_i <- data_moran$correlation
+und_intnet_chicago <- data_moran$intnet
+
+data_geary <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'geary', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+geary <- data_geary$correlation
+und_intnet_chicago <- data_geary$intnet
+
+
+data_getis <- NodeLocalCorrelation(und_intnet_chicago, 
+                                   dep_type = 'getis', 
+                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
+getis <- data_getis$correlation
+und_intnet_chicago <- data_getis$intnet
+
 gen_cov <- NodeGeneralCorrelation(und_intnet_chicago, 
                                   dep_type = 'covariance', 
                                   lag_max = 2, 
@@ -603,25 +622,6 @@ gen_corr <- NodeGeneralCorrelation(und_intnet_chicago,
                                    dep_type = 'correlation', 
                                    lag_max = 2, 
                                    intensity = igraph::vertex_attr(g)$intensity)
-
-data_moran <- NodeLocalCorrelation(und_intnet_chicago, 
-                                   dep_type = 'moran', 
-                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
-moran_i <- data_moran$correlation
-intnet_mi <- data_moran$intnet
-
-data_geary <- NodeLocalCorrelation(und_intnet_chicago, 
-                                   dep_type = 'geary', 
-                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
-geary <- data_geary$correlation
-intnet_gy <- data_geary$intnet
-
-
-data_getis <- NodeLocalCorrelation(und_intnet_chicago, 
-                                   dep_type = 'getis', 
-                                   intensity = igraph::vertex_attr(und_intnet_chicago$graph)$intensity)
-getis <- data_getis$correlation
-intnet_gs <- data_getis$intnet
 
 chicago_g <- und_intnet_chicago$graph
 

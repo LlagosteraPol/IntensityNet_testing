@@ -733,6 +733,12 @@ NodeGeneralCorrelation.intensitynet <- function(obj, dep_type = c('correlation',
   }
   dep_type <- match.arg(dep_type)
   g <- obj$graph
+  
+  # The function 'intergraph::asNetwork()' doesn't work with the 'getis' attribute since is from class 'localG'
+  for(attr_name in igraph::vertex_attr_names(g)){
+    if(attr_name == "getis") g <- igraph::delete_vertex_attr(g, 'getis')
+  }
+  
   g_sna <- intergraph::asNetwork(g)
   
   if(obj$graph_type == 'undirected') m <- 'graph'
@@ -829,13 +835,13 @@ NodeLocalCorrelation.intensitynet <- function(obj, dep_type = c('moran', 'getis'
 #' 
 #' @export
 plot.intensitynet <- function(x, vertex_labels='none', edge_labels='none', 
-                                 xy_axes=TRUE, enable_grid=FALSE, show_events = FALSE, alpha = 1, path = NULL, ...){
+                              xy_axes=TRUE, enable_grid=FALSE, show_events = FALSE, alpha = 1, path = NULL, ...){
   g <- x$graph
   
   if(!is.null(path) && length(path) == 1){
     stop("A path must contain more than one vertex")
   }
-
+  
   if(is(x, 'intensitynetUnd')){
     v_label <- switch(vertex_labels, 
                       none = {''}, 
@@ -1116,7 +1122,8 @@ SetNetworkAttribute.intensitynet <- function(obj, where, name, value){
                  events = obj$events, 
                  graph_type = obj$graph_type, 
                  distances_mtx = obj$distances_mtx,
-                 event_correction = obj$event_correction)
+                 event_correction = obj$event_correction,
+                 events_related = obj$events_related)
   attr(intnet, 'class') <- class(obj)
   intnet
 }
@@ -1266,7 +1273,7 @@ summary.intensitynet <- function(obj){
   g <- obj$graph
   event_related <- ""
   if(AreEventsRelated(obj)) event_related <- "The events are related to the network. \n"
-  else event_related <- "The events are not related to the networ, use the function 'RelateEventsToNetwork'. \n"
+  else event_related <- "The events are not related to the network, use the function 'RelateEventsToNetwork'. \n"
   
   cat("Intensitynet object of class", cls, "\n",
       "Network type:", obj$graph_type, "\n",
